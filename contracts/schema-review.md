@@ -1,6 +1,11 @@
 # Schema review — `cepzk_*` / `aca_*`
 
 Reviewed: the DDL you pasted (15 tables). Reconciled result: [`sql/0002_domain.sql`](sql/0002_domain.sql).
+
+Read with one caveat: what you pasted is shorthand (`fk(...)`, no `constraint` names, `small int`), so it is
+a design sketch rather than the applied migration. P0-3 and P1-7 may already be handled in a file I have
+not seen — treat those two as a checklist to confirm, the rest are about the model itself and stand either
+way.
 Every finding below carries the fix's location in that file, so you can apply the subset you agree with.
 
 Numbers are stable — quote `P0-3` in a PR and we both know which thing is meant.
