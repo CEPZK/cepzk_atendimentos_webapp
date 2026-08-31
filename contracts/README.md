@@ -41,41 +41,80 @@ npm run contract:hash -- --write   # → contracts/CONTRACT.sha256
 `CONTRACT.sha256` is committed; copy its value into the first line of your migration. Prose edits do not
 change it (only `sql/*.sql` + `types/*.ts` are hashed), so the hash stays a real signal.
 
-## 3. Domain — PENDING
+## 3. Domain — casa espírita: atendimentos & tratamentos
 
-The domain model is **not specified yet**; `sql/0002_domain.pending.sql` is a stub. The frozen part
-(identity: profiles, roles, RLS helpers) is fully specified and can be migrated today.
+Answered (locked):
 
-Everything the frontend needs to know about the domain, in the order it blocks work:
+| #   | Question                    | Decision                                                                                                                                                                                  |
+| --- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5   | Can the `assistido` log in? | **No.** They are plain rows, no `auth.users`. The app is volunteers-only, so `authenticated` is the only role that needs read access and the "client scope" class of policies disappears. |
+| 6   | Tenancy                     | **Single org.** No `organization_id` anywhere.                                                                                                                                            |
+| —   | Self-signup                 | Off; volunteers are provisioned by an admin.                                                                                                                                              |
 
-1. **What an "atendimento" is.** A row that represents what, exactly — a support conversation, a
-   booked appointment, a service job, a case? Its lifecycle is the whole app, so this decides the
-   state machine.
-2. **Statuses** — names and allowed transitions (`draft → open → waiting_client → resolved → closed`?).
-   These become a Postgres enum; renaming one later is a migration in two repos.
-3. **Actors** — who creates an atendimento and who works it. `staff`, `client`, or both? Is an
-   atendimento assignable, and can it have more than one assignee?
-4. **Channel** — is a WhatsApp/email conversation attached to each atendimento (so we need
-   `mensagens` + inbound webhook), or is the body just free-text notes?
-5. **Client identity** — are the people being served Supabase users (RLS per row, login for them) or
-   plain rows (no login, staff-only app)? This is the single biggest schema fork.
-6. **Tenancy** — one org, or many orgs/branches (needs `organization_id` on every table + a JWT claim)?
-7. **Numbers** — do atendimentos get a human code (`ATD-000123`)? Auto-generated via sequence, and
-   the frontend will display it everywhere.
-8. **Search/sort** — what filters does the queue need? Decides which indexes and GIN trigram ops exist.
+Stated by the domain owner (my reading — correct me if the grain is wrong):
 
-Fill this in by editing the table below, or answer in chat and the web agent will write it:
+1. `assistido` — a person receiving assistance. Registered **after** the _Atendimento Fraterno_
+   interview, by the volunteer who interviewed them.
+2. `tratamento` — a catalog of treatment types the center offers.
+3. `atendimento` ≈ **one assistido enrolled in one tratamento** — not "the interview" and not
+   "one visit". Its lifecycle ends in **`alta`** (discharge), marked by a volunteer.
+4. Sessions: for one specific tratamento type, volunteers maintain an **agenda de sessões** per
+   assistido (recurring appointments, attendance presumably relevant). Specified separately later.
+
+Derived from that, the shape the frontend expects (pending your DDL, see §3.5):
+
+```
+assistidos ──< atendimentos >── tratamentos
+                    │  status: em_andamento → concluido(alta)
+                    └──< sessoes (only for the treatment type that has an agenda)
+```
+
+Consequences already visible:
+
+- `assistidos` are **third-party personal data in a charity context** (and religion-adjacent). That is
+  an LGPD minimisation question, not a nice-to-have: no columns nobody uses, hard-delete vs `deleted_at`
+  must be an explicit decision, and "who changed the alta" wants an audit trail from day 1 — retrofitting
+  `atendimento_eventos` later loses history.
+- `alta` as **status vs timestamp** matters: `status = 'concluido'` alone cannot answer "how long was the
+  average treatment", and a `alta_em` timestamp without a status breaks the queue filter. Prefer both.
+- A person can be in several treatments at once, so "is this assistido done?" is _not_ a field on
+  `assistidos` — never denormalise it there.
+
+### 3.5 Blocking on your DDL
+
+You have an existing schema. Paste/point me at it (any of: `supabase/migrations/*.sql`,
+`pg_dump --schema-only`, or the dashboard's SQL editor export) and I will do the drift work instead of
+guessing: reconcile `contracts/sql/` + `contracts/types/database.types.ts` to match, then flag anything
+that is load-bearing and missing — absent `RLS ENABLE`, no index on a policy column, statuses as free
+`text` instead of an enum, `timestamp` instead of `timestamptz`, a hard `FK ... on delete cascade` that
+would erase an alta history, or the service key in the web project.
+
+Four things a DDL dump cannot tell me, so answer in prose:
+
+1. **Grain of `atendimento`** — is one row "the enrollment in one treatment" (my reading) or "one
+   visit/meeting"?
+2. **Status vocabulary + who may move it** — exact values, and is `alta` reversible by a staff volunteer
+   or admin-only?
+3. **Sessions** — does the agenda belong to _one_ treatment type (a column on `tratamentos` like
+   `has_agenda`) or is any treatment able to have sessions? Are sessions shared (several assistidos per
+   sessão, capacity limit) or one-to-one? Is attendance (`presente`/`falta`/`justificada`) recorded, and
+   is a `falta` supposed to nudge the status back?
+4. **Volumes + outputs** — rough count of assistidos and sessões/week, and whether a printed
+   "relação de sala" / CSV export is a requirement (it changes pagination and query shape, not just the UI).
+
+Fill in this block (or answer in chat and the web agent writes it):
 
 ```yaml
 domain:
-  entity: # e.g. atendimento = scheduled service appointment
-  statuses: []
-  transitions: {}
-  actors: []
-  channel: none | messages_thread
-  client_can_login: true | false
-  tenancy: single_org | multi_org
-  human_code: true | false
+  entity: atendimento = assistido enrolled in one tratamento, ends in alta
+  statuses: [] # exact values, e.g. [em_andamento, concluido]
+  transitions: {} # who may move each edge
+  actors: [volunteer, admin]
+  channel: none
+  client_can_login: false
+  tenancy: single_org
+  human_code: false # TBD — codes like ATF-000123 are useful for phone lookups
+  sessions: TBD # see §3.5 (3)
 ```
 
 ## 4. How the two repos stay honest
