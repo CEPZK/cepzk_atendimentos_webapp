@@ -11,10 +11,11 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,css,md,mjs}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,css,md,mjs}\"",
-    "check": "npm run lint && npm run typecheck && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run sql:lint && npm run build",
     "types:generate": "node scripts/generate-types.mjs",
     "contract:hash": "node scripts/contract-hash.mjs",
-    "contract:check": "node scripts/generate-types.mjs --check"
+    "contract:check": "node scripts/generate-types.mjs --check",
+    "sql:lint": "node scripts/lint-sql.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
@@ -34,6 +35,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "pgsql-parser": "^18.2.6",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4",

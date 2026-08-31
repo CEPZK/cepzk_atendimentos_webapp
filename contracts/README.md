@@ -41,81 +41,29 @@ npm run contract:hash -- --write   # → contracts/CONTRACT.sha256
 `CONTRACT.sha256` is committed; copy its value into the first line of your migration. Prose edits do not
 change it (only `sql/*.sql` + `types/*.ts` are hashed), so the hash stays a real signal.
 
-## 3. Domain — casa espírita: atendimentos & tratamentos
+## 3. Domain — received, reviewed, reconciled
 
-Answered (locked):
+The owner's schema (15 tables, `cepzk_*` + `aca_*`) is in git history as the input; the review of it is
+**[`schema-review.md`](schema-review.md)** and the reconciled migration is
+**[`sql/0002_domain.sql`](sql/0002_domain.sql)**. Read those two before touching either.
 
-| #   | Question                    | Decision                                                                                                                                                                                  |
-| --- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 5   | Can the `assistido` log in? | **No.** They are plain rows, no `auth.users`. The app is volunteers-only, so `authenticated` is the only role that needs read access and the "client scope" class of policies disappears. |
-| 6   | Tenancy                     | **Single org.** No `organization_id` anywhere.                                                                                                                                            |
-| —   | Self-signup                 | Off; volunteers are provisioned by an admin.                                                                                                                                              |
+Locked decisions:
 
-Stated by the domain owner (my reading — correct me if the grain is wrong):
+| Topic              | Decision                                                                                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain             | `assistido` registered after the _Atendimento Fraterno_ interview; enrolled in N `tratamento`s (one per `setor`); each ends in **`alta`** |
+| `client_can_login` | **No** — `assistido` rows are not users, so there is exactly one actor class and no per-row client scope                                  |
+| Tenancy            | **Single org**                                                                                                                            |
+| Sessions           | Only setores with `tem_agenda` get one (ACA today); `presenca` tracked                                                                    |
+| Realtime           | Not in v1 (refetch on focus)                                                                                                              |
 
-1. `assistido` — a person receiving assistance. Registered **after** the _Atendimento Fraterno_
-   interview, by the volunteer who interviewed them.
-2. `tratamento` — a catalog of treatment types the center offers.
-3. `atendimento` ≈ **one assistido enrolled in one tratamento** — not "the interview" and not
-   "one visit". Its lifecycle ends in **`alta`** (discharge), marked by a volunteer.
-4. Sessions: for one specific tratamento type, volunteers maintain an **agenda de sessões** per
-   assistido (recurring appointments, attendance presumably relevant). Specified separately later.
+Still open — three questions, all listed with recommendations in `schema-review.md` §"Decisions needed":
+**the `aca_encontro` split (P1-3)**, **whether the AF interview is a `tratamento` row (P2)**, and
+**whether faltas feed back into `status`**.
 
-Derived from that, the shape the frontend expects (pending your DDL, see §3.5):
-
-```
-assistidos ──< atendimentos >── tratamentos
-                    │  status: em_andamento → concluido(alta)
-                    └──< sessoes (only for the treatment type that has an agenda)
-```
-
-Consequences already visible:
-
-- `assistidos` are **third-party personal data in a charity context** (and religion-adjacent). That is
-  an LGPD minimisation question, not a nice-to-have: no columns nobody uses, hard-delete vs `deleted_at`
-  must be an explicit decision, and "who changed the alta" wants an audit trail from day 1 — retrofitting
-  `atendimento_eventos` later loses history.
-- `alta` as **status vs timestamp** matters: `status = 'concluido'` alone cannot answer "how long was the
-  average treatment", and a `alta_em` timestamp without a status breaks the queue filter. Prefer both.
-- A person can be in several treatments at once, so "is this assistido done?" is _not_ a field on
-  `assistidos` — never denormalise it there.
-
-### 3.5 Blocking on your DDL
-
-You have an existing schema. Paste/point me at it (any of: `supabase/migrations/*.sql`,
-`pg_dump --schema-only`, or the dashboard's SQL editor export) and I will do the drift work instead of
-guessing: reconcile `contracts/sql/` + `contracts/types/database.types.ts` to match, then flag anything
-that is load-bearing and missing — absent `RLS ENABLE`, no index on a policy column, statuses as free
-`text` instead of an enum, `timestamp` instead of `timestamptz`, a hard `FK ... on delete cascade` that
-would erase an alta history, or the service key in the web project.
-
-Four things a DDL dump cannot tell me, so answer in prose:
-
-1. **Grain of `atendimento`** — is one row "the enrollment in one treatment" (my reading) or "one
-   visit/meeting"?
-2. **Status vocabulary + who may move it** — exact values, and is `alta` reversible by a staff volunteer
-   or admin-only?
-3. **Sessions** — does the agenda belong to _one_ treatment type (a column on `tratamentos` like
-   `has_agenda`) or is any treatment able to have sessions? Are sessions shared (several assistidos per
-   sessão, capacity limit) or one-to-one? Is attendance (`presente`/`falta`/`justificada`) recorded, and
-   is a `falta` supposed to nudge the status back?
-4. **Volumes + outputs** — rough count of assistidos and sessões/week, and whether a printed
-   "relação de sala" / CSV export is a requirement (it changes pagination and query shape, not just the UI).
-
-Fill in this block (or answer in chat and the web agent writes it):
-
-```yaml
-domain:
-  entity: atendimento = assistido enrolled in one tratamento, ends in alta
-  statuses: [] # exact values, e.g. [em_andamento, concluido]
-  transitions: {} # who may move each edge
-  actors: [volunteer, admin]
-  channel: none
-  client_can_login: false
-  tenancy: single_org
-  human_code: false # TBD — codes like ATF-000123 are useful for phone lookups
-  sessions: TBD # see §3.5 (3)
-```
+Highest-severity items, in short: `alta` had no column (P0-1), volunteers had no `auth.users` link so no
+policy could be written (P0-2), RLS was absent on sensitive data (P0-3), `tratamento_atual` contradicted
+`unique(assistido_id, setor_id)` (P0-4), and `nome unique` was the identity key (P0-5).
 
 ## 4. How the two repos stay honest
 

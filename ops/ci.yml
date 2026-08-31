@@ -25,6 +25,8 @@ jobs:
         run: npm run lint
       - name: Typecheck
         run: npm run typecheck
+      - name: Contract SQL parses (Postgres grammar)
+        run: npm run sql:lint
       - name: Build
         # Dummy env so the app builds without secrets: the env schema is validated
         # at module scope, and `next build` prerenders /login (public). Pages that

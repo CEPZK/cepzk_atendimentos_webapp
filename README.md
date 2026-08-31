@@ -87,7 +87,9 @@ scripts/                      typegen + contract hashing
 
 ## Things deliberately not done yet
 
-- **Domain screens** — waiting on `contracts/README.md` §3.
+- **Domain screens** — waiting on the three answers in `contracts/schema-review.md` §"Decisions needed".
+- **`public.profiles`** — superseded by `cepzk_voluntario` (see review P0-2); 0001 should shrink to the enum
+  - helpers once that call is confirmed.
 - **Realtime** — decided against for v1; `refetchOnWindowFocus: true` covers it, and swapping to a
   `postgres_changes` channel is a change in `src/lib/query/` only.
 - **Full CSP** — partial headers ship now; a strict `script-src` needs nonce support
