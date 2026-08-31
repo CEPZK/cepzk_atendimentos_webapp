@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        # Dummy env so the app builds without secrets: the env schema is validated
+        # at module scope, and `next build` prerenders /login (public). Pages that
+        # read cookies are force-dynamic and are not executed at build time.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_key_000000
+        run: npm run build
+      - name: Contract format check
+        run: |
+          npx prettier --check "src/**/*.ts" "src/**/*.tsx" "contracts/**/*.ts" "scripts/**/*.mjs" \
+            || { echo "::error::Run 'npm run format'"; exit 1; }
+
+  # Only meaningful once a project exists; skipped silently otherwise so this
+  # workflow does not go red while the backend repo is still being set up.
+  contract-drift:
+    needs: verify
+    if: ${{ vars.SUPABASE_DRIFT_CHECK == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Supabase CLI
+        run: npm i -D supabase
+      - name: Generate + diff types
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: npm run types:generate

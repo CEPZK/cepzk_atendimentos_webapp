@@ -1,0 +1,96 @@
+-- contract: see ../CONTRACT.sha256 — pin that value in your migration header (backend repo)
+-- =============================================================================
+-- 0002_domain.pending.sql — NOT IMPLEMENTABLE YET.
+--
+-- This is the shape the domain tables must take once contracts/README.md §3 is
+-- answered. Do not apply as-is; do not invent a different shape unilaterally.
+-- The frontend compiles against contracts/types/database.types.ts, and that
+-- file has no domain tables yet, so any table created here without updating the
+-- types is invisible to the app and will not type-check.
+--
+-- BLOCKING QUESTIONS (contracts/README.md §3):
+--   1. what an "atendimento" is (conversation | appointment | job | case)
+--   2. status enum values + allowed transitions
+--   3. actors: who opens, who works, single or multi assignee
+--   4. channel: is there a message thread (mensagens) with an inbound webhook
+--   5. can the served client log in (RLS per row) or is this staff-only
+--   6. tenancy: single org or organization_id everywhere
+--   7. human-readable code (ATD-000123) or uuid only
+--   8. filters the queue needs (drives the indexes below)
+-- =============================================================================
+
+-- ── template ─────────────────────────────────────────────────────────────────
+--
+-- create extension if not exists pg_trgm with schema extensions;  -- only if §3.8 needs fuzzy search
+--
+-- do $$ begin
+--   if not exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
+--                  where n.nspname = 'public' and t.typname = 'atendimento_status') then
+--     create type public.atendimento_status as enum ('draft','open','waiting_client','resolved','closed');
+--   end if;
+-- end $$;
+--
+-- create table public.atendimentos (
+--   id           uuid primary key default gen_random_uuid(),
+--   code         text not null unique,               -- §3.7: ATD-000123 via sequence + trigger
+--   status       public.atendimento_status not null default 'open',
+--   subject      text not null,
+--   summary      text,
+--   requester_id uuid references public.profiles (id) on delete set null,
+--   assignee_id  uuid references public.profiles (id) on delete set null,
+--   opened_at    timestamptz not null default now(),
+--   closed_at    timestamptz,
+--   created_at   timestamptz not null default now(),
+--   updated_at   timestamptz not null default now(),
+--   -- status transitions belong in the DB, not only the UI:
+--   constraint atendimentos_closed_after_opened check (closed_at is null or closed_at >= opened_at),
+--   constraint atendimentos_subject_length check (char_length(subject) between 1 and 200)
+-- );
+--
+-- -- policy columns need indexes or the policy is a per-row scan
+-- create index atendimentos_assignee_status_idx on public.atendimentos (assignee_id, status)
+--   where closed_at is null;
+-- create index atendimentos_opened_at_desc on public.atendimentos (opened_at desc);
+-- create index atendimentos_subject_trgm on public.atendimentos using gin (subject gin_trgm_ops);
+--
+-- create trigger atendimentos_set_updated_at before update on public.atendimentos
+--   for each row execute function public.set_updated_at();
+--
+-- alter table public.atendimentos enable row level security;
+-- alter table public.atendimentos force row level security;   -- no definer helper reads this table
+--
+-- create policy atendimentos_select_visible on public.atendimentos
+--   for select to authenticated using (
+--     public.is_active_member()
+--     and (
+--       public.is_staff()
+--       or requester_id = (select auth.uid())
+--       or exists (select 1 from public.atendimento_participants ap
+--                  where ap.atendimento_id = atendimentos.id and ap.user_id = (select auth.uid()))
+--     )
+--   );
+--
+-- -- status/assignee are privileged: enforced by trigger, RLS cannot scope columns
+-- create function public.guard_atendimento_privileges() returns trigger language plpgsql
+-- security definer set search_path = '' as $$
+-- begin
+--   if public.is_staff() then return new; end if;
+--   if new.status is distinct from old.status or new.assignee_id is distinct from old.assignee_id then
+--     raise exception 'only staff may change status or assignment' using errcode = '42501';
+--   end if;
+--   return new;
+-- end $$;
+--
+-- ── notes for the implementer ────────────────────────────────────────────────
+-- 1. Every table gets: created_at/updated_at defaults, set_updated_at trigger,
+--    enable+force RLS, a `<table>_select_*` policy ANDed with is_active_member().
+-- 2. Enum + transition rules: prefer a trigger or a `status` update policy per
+--    transition over a check constraint, so a bad transition returns a clear
+--    `conflict` from the API rather than a 500 from Postgres.
+-- 3. Free-text bodies (chat/WhatsApp transcripts) go in a child table, never a
+--    column on the parent, so a queue list query does not drag megabytes of text
+--    through a policy-annotated scan.
+-- 4. Add the matching block to contracts/types/database.types.ts Region 2 in
+--    the SAME commit, then re-run `npm run types:generate` and paste the
+--    resulting profiles/atendimentos types back here in the PR description.
+-- 5. Then add the pgTAP tests required by contracts/rls-conventions.md §6.
