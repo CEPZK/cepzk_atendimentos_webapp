@@ -72,6 +72,7 @@ export function Diagnostics({ serverConfigured }: { serverConfigured: boolean })
       try {
         const response = await fetch(`${config.url}/auth/v1/settings`, {
           headers: { apikey: config.anonKey },
+          signal: AbortSignal.timeout(8000),
         });
         results.pop();
         push({
@@ -104,6 +105,24 @@ export function Diagnostics({ serverConfigured }: { serverConfigured: boolean })
             ? `Autenticado como ${session.user.email}.`
             : "Nenhuma sessão ativa (esperado antes de entrar).",
         });
+
+        if (session) {
+          const { data, error } = await supabase
+            .from("cepzk_voluntario")
+            .select("id, nome, sobrenome, telefone")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          push({
+            name: "Leitura de cepzk_voluntario (RLS)",
+            status: error ? "fail" : data ? "ok" : "warn",
+            detail: error
+              ? `${error.code ?? "erro"}: ${error.message}`
+              : data
+                ? `perfil encontrado — nome=${data.nome ?? "—"} sobrenome=${data.sobrenome ?? "—"} telefone=${data.telefone ? "preenchido" : "—"}`
+                : "nenhuma linha retornada (perfil ainda não criado ou bloqueado por RLS)",
+          });
+        }
 
         const authCookie = document.cookie
           .split("; ")
@@ -149,12 +168,12 @@ export function Diagnostics({ serverConfigured }: { serverConfigured: boolean })
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 p-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-        Diagnóstico
-      </h1>
+    <main className="mt-8">
+      <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+        Neste navegador
+      </h2>
       <p className="mt-1 text-sm text-slate-500">
-        Verificação da configuração de acesso, executada neste navegador.
+        Verificação executada no seu dispositivo.
       </p>
 
       <ul className="mt-6 space-y-3">

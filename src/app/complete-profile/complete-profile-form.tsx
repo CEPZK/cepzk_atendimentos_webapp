@@ -51,7 +51,10 @@ export function CompleteProfileForm({ profile }: CompleteProfileFormProps) {
         data: { nome: values.nome },
       });
       if (updateUserError) {
-        setError("Não foi possível salvar seus dados. Tente novamente.");
+        console.error("[cepzk] Failed to update the auth metadata", updateUserError);
+        setError(
+          `Não foi possível salvar seus dados (${updateUserError.message}).`,
+        );
         setIsSubmitting(false);
         return;
       }
@@ -72,7 +75,10 @@ export function CompleteProfileForm({ profile }: CompleteProfileFormProps) {
         .eq("id", user.id);
 
       if (profileError) {
-        setError("Não foi possível salvar seus dados. Tente novamente.");
+        console.error("[cepzk] Failed to save the profile", profileError);
+        setError(
+          `Não foi possível salvar seus dados (${profileError.code ?? "erro"}: ${profileError.message}).`,
+        );
         setIsSubmitting(false);
         return;
       }
