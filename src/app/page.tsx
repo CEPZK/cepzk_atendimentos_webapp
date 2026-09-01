@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isProfileComplete } from "@/lib/volunteer";
 
+// These pages depend on the request cookies (session): never prerender
+// them, otherwise a build made without the Supabase credentials would bake
+// a permanent redirect into the output.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Início",
 };
