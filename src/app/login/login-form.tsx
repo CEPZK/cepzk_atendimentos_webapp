@@ -27,28 +27,36 @@ export function LoginForm({ nextPath, errorMessage = null }: LoginFormProps) {
 
     setIsSending(true);
 
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
 
-    const { error: signInError } = await supabase.auth.signInWithOtp({
-      email: trimmedEmail,
-      options: {
-        // Invite-only platform: never create a user without an invite.
-        shouldCreateUser: false,
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
-      },
-    });
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email: trimmedEmail,
+        options: {
+          // Invite-only platform: never create a user without an invite.
+          shouldCreateUser: false,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        },
+      });
 
-    setIsSending(false);
-
-    if (signInError) {
-      // Usually: the e-mail was never invited to the platform.
+      if (signInError) {
+        // Usually: the e-mail was never invited to the platform.
+        setError(
+          "Não foi possível enviar o link. Verifique se o e-mail está correto e se você foi convidado para a plataforma.",
+        );
+        setIsSending(false);
+        return;
+      }
+    } catch {
       setError(
-        "Não foi possível enviar o link. Verifique se o e-mail está correto e se você foi convidado para a plataforma.",
+        "Serviço temporariamente indisponível. Tente novamente em alguns instantes.",
       );
+      setIsSending(false);
       return;
     }
 
+    setIsSending(false);
     setIsSent(true);
   }
 

@@ -41,41 +41,50 @@ export function CompleteProfileForm({ profile }: CompleteProfileFormProps) {
 
     setIsSubmitting(true);
 
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
 
-    // The first name lives in the Auth metadata; the database triggers
-    // mirror it to `cepzk_voluntario.nome`.
-    const { error: updateUserError } = await supabase.auth.updateUser({
-      data: { nome: values.nome },
-    });
-    if (updateUserError) {
-      setError("Não foi possível salvar seus dados. Tente novamente.");
+      // The first name lives in the Auth metadata; the database triggers
+      // mirror it to `cepzk_voluntario.nome`.
+      const { error: updateUserError } = await supabase.auth.updateUser({
+        data: { nome: values.nome },
+      });
+      if (updateUserError) {
+        setError("Não foi possível salvar seus dados. Tente novamente.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setError("Sua sessão expirou. Entre novamente.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Last name and phone are stored directly in the volunteer profile.
+      const { error: profileError } = await supabase
+        .from("cepzk_voluntario")
+        .update({ sobrenome: values.sobrenome, telefone: values.telefone })
+        .eq("id", user.id);
+
+      if (profileError) {
+        setError("Não foi possível salvar seus dados. Tente novamente.");
+        setIsSubmitting(false);
+        return;
+      }
+    } catch {
+      setError(
+        "Serviço temporariamente indisponível. Tente novamente em alguns instantes.",
+      );
       setIsSubmitting(false);
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setError("Sua sessão expirou. Entre novamente.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Last name and phone are stored directly in the volunteer profile.
-    const { error: profileError } = await supabase
-      .from("cepzk_voluntario")
-      .update({ sobrenome: values.sobrenome, telefone: values.telefone })
-      .eq("id", user.id);
-
-    if (profileError) {
-      setError("Não foi possível salvar seus dados. Tente novamente.");
-      setIsSubmitting(false);
-      return;
-    }
-
+    setIsSubmitting(false);
     router.replace("/");
     router.refresh();
   }

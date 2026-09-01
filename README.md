@@ -52,6 +52,33 @@ npm start
 O service worker é gerado apenas no build de produção
 (`public/sw.js`, ignorado pelo git).
 
+## Deploy na Vercel
+
+O projeto já está pronto para deploy (o build usa webpack
+explicitamente via `next build --webpack` — necessário enquanto o
+Suporte a Turbopack do Serwist for experimental).
+
+1. **Importe o repositório** em [vercel.com/new](https://vercel.com/new)
+   (framework detectado automaticamente: Next.js);
+2. **Configure as variáveis de ambiente** em
+   *Project Settings → Environment Variables* (nos ambientes Production
+   e Preview):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. **No Supabase** (*Authentication → URL Configuration*), adicione à
+   allowlist de redirects:
+   - `https://SEU-APP.vercel.app/auth/callback` (produção);
+   - `https://SEU-APP-PREVIEW.vercel.app/auth/callback` (previews, se
+     quiser testar o magic link neles — o endereço de cada preview é
+     gerado a cada deploy);
+4. **Deploy.** O `public/sw.js` é gerado no build e servido com
+   `Cache-Control: no-cache` (via `vercel.json`), garantindo que o
+   navegador sempre verifique atualizações do service worker.
+
+> O primeiro admin não pode ser convidado pelo sistema — crie-o
+> manualmente no Supabase (*Authentication → Users → Add user*, marcando
+> *Auto confirm user*), como documentado no backend.
+
 ## Autenticação
 
 O acesso é **sem senha** e **somente por convite (invite-only)**:
