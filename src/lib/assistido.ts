@@ -28,10 +28,6 @@ export interface CatalogItem {
   nome: string;
 }
 
-export interface SectorItem extends CatalogItem {
-  departamento: string | null;
-}
-
 /** A treatment as shown on the (read-only) assistido screen. */
 export interface TreatmentView {
   id: number;
@@ -47,8 +43,8 @@ export interface TreatmentView {
 
 /** A treatment as filled in on the registration screen. */
 export interface TreatmentInput {
-  setorId: number | null;
-  horarioId: number | null;
+  /** Row of `cepzk_atendimento` (sector + schedule). */
+  atendimentoId: number | null;
   distoniaId: number | null;
   queixaIds: number[];
   obs: string;

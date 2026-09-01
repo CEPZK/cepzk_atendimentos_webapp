@@ -3,30 +3,24 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ScheduleEntry } from "@/lib/volunteer";
+import { atendimentoLabel, type AtendimentoItem } from "@/lib/atendimento";
 import { CalendarIcon, PlusIcon, TrashIcon } from "@/app/icons";
 import { addScheduleEntry, removeScheduleEntry } from "../actions";
-
-interface Option {
-  id: number;
-  nome: string;
-}
 
 export function ScheduleEditor({
   volunteerId,
   entries,
-  sectors,
-  schedules,
+  atendimentos,
 }: {
   volunteerId: string;
   entries: ScheduleEntry[];
-  sectors: Option[];
-  schedules: Option[];
+  /** Sector + schedule combinations the house offers. */
+  atendimentos: AtendimentoItem[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const [setorId, setSetorId] = useState<string>("");
-  const [horarioId, setHorarioId] = useState<string>("");
+  const [atendimentoId, setAtendimentoId] = useState<string>("");
   const [feedback, setFeedback] = useState<{
     ok: boolean;
     message: string;
@@ -46,20 +40,13 @@ export function ScheduleEditor({
 
   function handleAdd(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!setorId || !horarioId) {
-      setFeedback({ ok: false, message: "Selecione o setor e o horário." });
+    if (!atendimentoId) {
+      setFeedback({ ok: false, message: "Selecione o atendimento." });
       return;
     }
     run(async () => {
-      const result = await addScheduleEntry(
-        volunteerId,
-        Number(setorId),
-        Number(horarioId),
-      );
-      if (result.ok) {
-        setSetorId("");
-        setHorarioId("");
-      }
+      const result = await addScheduleEntry(volunteerId, Number(atendimentoId));
+      if (result.ok) setAtendimentoId("");
       return result;
     });
   }
@@ -74,13 +61,13 @@ export function ScheduleEditor({
         Escalas
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        Setores e horários em que este voluntário atua.
+        Atendimentos em que este voluntário atua.
       </p>
 
       <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
         {entries.map((entry) => (
           <li
-            key={`${entry.setor_id}-${entry.horario_id}`}
+            key={entry.atendimento_id}
             className="flex items-center gap-3 p-3.5"
           >
             <span className="min-w-0 flex-1">
@@ -97,11 +84,7 @@ export function ScheduleEditor({
               disabled={isPending}
               onClick={() =>
                 run(() =>
-                  removeScheduleEntry(
-                    volunteerId,
-                    entry.setor_id,
-                    entry.horario_id,
-                  ),
+                  removeScheduleEntry(volunteerId, entry.atendimento_id),
                 )
               }
               aria-label={`Desassociar de ${entry.setor} — ${entry.horario}`}
@@ -120,44 +103,26 @@ export function ScheduleEditor({
       </ul>
 
       <form onSubmit={handleAdd} className="mt-4 space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
-            <label htmlFor="setor" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Setor
-            </label>
-            <select
-              id="setor"
-              value={setorId}
-              onChange={(event) => setSetorId(event.target.value)}
-              className={selectClass}
-            >
-              <option value="">Selecione…</option>
-              {sectors.map((sector) => (
-                <option key={sector.id} value={sector.id}>
-                  {sector.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="horario" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Horário
-            </label>
-            <select
-              id="horario"
-              value={horarioId}
-              onChange={(event) => setHorarioId(event.target.value)}
-              className={selectClass}
-            >
-              <option value="">Selecione…</option>
-              {schedules.map((schedule) => (
-                <option key={schedule.id} value={schedule.id}>
-                  {schedule.nome}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label
+            htmlFor="atendimento"
+            className="mb-1.5 block text-sm font-medium text-slate-700"
+          >
+            Atendimento
+          </label>
+          <select
+            id="atendimento"
+            value={atendimentoId}
+            onChange={(event) => setAtendimentoId(event.target.value)}
+            className={selectClass}
+          >
+            <option value="">Selecione…</option>
+            {atendimentos.map((atendimento) => (
+              <option key={atendimento.id} value={atendimento.id}>
+                {atendimentoLabel(atendimento)}
+              </option>
+            ))}
+          </select>
         </div>
 
         {feedback && (

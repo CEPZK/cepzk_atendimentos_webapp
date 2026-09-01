@@ -5,9 +5,9 @@ import {
   DEFAULT_DISTONIA,
   TEA_DISTONIA,
   type CatalogItem,
-  type SectorItem,
   type TreatmentInput,
 } from "@/lib/assistido";
+import { atendimentoLabel, type AtendimentoItem } from "@/lib/atendimento";
 import { TrashIcon } from "@/app/icons";
 
 export const FIELD_CLASS =
@@ -15,8 +15,7 @@ export const FIELD_CLASS =
 
 export function emptyTreatment(): TreatmentInput {
   return {
-    setorId: null,
-    horarioId: null,
+    atendimentoId: null,
     distoniaId: null,
     queixaIds: [],
     obs: "",
@@ -26,8 +25,8 @@ export function emptyTreatment(): TreatmentInput {
 interface TreatmentFieldsProps {
   index: number;
   treatment: TreatmentInput;
-  sectors: SectorItem[];
-  schedules: CatalogItem[];
+  /** Sector + schedule combinations offered as treatment. */
+  atendimentos: AtendimentoItem[];
   distonias: CatalogItem[];
   queixas: CatalogItem[];
   canRemove: boolean;
@@ -39,33 +38,34 @@ interface TreatmentFieldsProps {
  * One treatment of the assistido.
  *
  * Acolher com Amor carries extra information: the reported distonia and,
- * for TEA, the main complaints. Both only appear once the sector is
+ * for TEA, the main complaints. Both only appear once the atendimento is
  * chosen, so the other treatments stay short.
  */
 export function TreatmentFields({
   index,
   treatment,
-  sectors,
-  schedules,
+  atendimentos,
   distonias,
   queixas,
   canRemove,
   onChange,
   onRemove,
 }: TreatmentFieldsProps) {
-  const sector = sectors.find((item) => item.id === treatment.setorId);
-  const isAca = sector?.nome === ACA_SECTOR;
+  const atendimento = atendimentos.find(
+    (item) => item.id === treatment.atendimentoId,
+  );
+  const isAca = atendimento?.setor === ACA_SECTOR;
   const distonia = distonias.find((item) => item.id === treatment.distoniaId);
   const isTea = isAca && distonia?.nome === TEA_DISTONIA;
 
-  function handleSectorChange(value: string) {
-    const setorId = value ? Number(value) : null;
-    const nextSector = sectors.find((item) => item.id === setorId);
-    const isNextAca = nextSector?.nome === ACA_SECTOR;
+  function handleAtendimentoChange(value: string) {
+    const atendimentoId = value ? Number(value) : null;
+    const next = atendimentos.find((item) => item.id === atendimentoId);
+    const isNextAca = next?.setor === ACA_SECTOR;
 
     onChange({
       ...treatment,
-      setorId,
+      atendimentoId,
       // "Outros" comes pre-selected, as the team asked.
       distoniaId: isNextAca
         ? (treatment.distoniaId ??
@@ -119,50 +119,21 @@ export function TreatmentFields({
       <div className="mt-3 space-y-4">
         <div>
           <label
-            htmlFor={fieldId("setor")}
+            htmlFor={fieldId("atendimento")}
             className="mb-1.5 block text-sm font-medium text-slate-700"
           >
-            Setor
+            Atendimento
           </label>
           <select
-            id={fieldId("setor")}
-            value={treatment.setorId ?? ""}
-            onChange={(event) => handleSectorChange(event.target.value)}
+            id={fieldId("atendimento")}
+            value={treatment.atendimentoId ?? ""}
+            onChange={(event) => handleAtendimentoChange(event.target.value)}
             className={FIELD_CLASS}
           >
-            <option value="">Selecione o setor</option>
-            {sectors.map((item) => (
+            <option value="">Selecione o atendimento</option>
+            {atendimentos.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label
-            htmlFor={fieldId("horario")}
-            className="mb-1.5 block text-sm font-medium text-slate-700"
-          >
-            Horário
-          </label>
-          <select
-            id={fieldId("horario")}
-            value={treatment.horarioId ?? ""}
-            onChange={(event) =>
-              onChange({
-                ...treatment,
-                horarioId: event.target.value
-                  ? Number(event.target.value)
-                  : null,
-              })
-            }
-            className={FIELD_CLASS}
-          >
-            <option value="">Selecione o horário</option>
-            {schedules.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.nome}
+                {atendimentoLabel(item)}
               </option>
             ))}
           </select>

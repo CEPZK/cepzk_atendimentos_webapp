@@ -7,6 +7,13 @@ import {
   type ScheduleEntry,
   type Volunteer,
 } from "@/lib/volunteer";
+import {
+  mapAtendimento,
+  sortAtendimentos,
+  ATENDIMENTO_SELECT,
+  type AtendimentoItem,
+  type AtendimentoRow,
+} from "@/lib/atendimento";
 import { ArrowLeftIcon } from "@/app/icons";
 import { VolunteerForm } from "./volunteer-form";
 import { ScheduleEditor } from "./schedule-editor";
@@ -32,17 +39,15 @@ export async function generateMetadata({
 }
 
 interface ScheduleRow {
-  setor_id: number;
-  horario_id: number;
-  setor: { nome: string; departamento: { nome: string } | null } | null;
-  horario: { nome: string } | null;
+  atendimento_id: number;
+  atendimento: AtendimentoRow | null;
 }
 
 export default async function VolunteerPage({ params }: PageProps) {
   const { id } = await params;
   const { supabase, volunteer: currentUser } = await requireAdmin();
 
-  const [{ data: volunteer }, { data: scheduleRows }, { data: sectors }, { data: schedules }] =
+  const [{ data: volunteer }, { data: scheduleRows }, { data: atendimentoRows }] =
     await Promise.all([
       supabase
         .from("cepzk_voluntario")
@@ -51,38 +56,39 @@ export default async function VolunteerPage({ params }: PageProps) {
         .maybeSingle<Volunteer>(),
       supabase
         .from("cepzk_escala")
-        .select(
-          "setor_id, horario_id, setor:cepzk_setor (nome, departamento:cepzk_departamento (nome)), horario:cepzk_horario (nome)",
-        )
+        .select(`atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT})`)
         .eq("voluntario_id", id)
         .returns<ScheduleRow[]>(),
       supabase
-        .from("cepzk_setor")
-        .select("id, nome")
-        .order("nome")
-        .returns<{ id: number; nome: string }[]>(),
-      supabase
-        .from("cepzk_horario")
-        .select("id, nome")
-        .order("id")
-        .returns<{ id: number; nome: string }[]>(),
+        .from("cepzk_atendimento")
+        .select(ATENDIMENTO_SELECT)
+        .returns<AtendimentoRow[]>(),
     ]);
 
   if (!volunteer) {
     notFound();
   }
 
+  const atendimentos: AtendimentoItem[] = sortAtendimentos(
+    (atendimentoRows ?? []).map(mapAtendimento),
+  );
+
   const entries: ScheduleEntry[] = (scheduleRows ?? [])
-    .map((row) => ({
-      setor_id: row.setor_id,
-      horario_id: row.horario_id,
-      setor: row.setor?.nome ?? `Setor ${row.setor_id}`,
-      departamento: row.setor?.departamento?.nome ?? null,
-      horario: row.horario?.nome ?? `Horário ${row.horario_id}`,
-    }))
+    .map((row) => {
+      const atendimento = row.atendimento
+        ? mapAtendimento(row.atendimento)
+        : null;
+      return {
+        atendimento_id: row.atendimento_id,
+        setor: atendimento?.setor ?? `Atendimento ${row.atendimento_id}`,
+        departamento: atendimento?.departamento ?? null,
+        horario: atendimento?.horario ?? "—",
+      };
+    })
     .sort(
       (a, b) =>
-        a.setor.localeCompare(b.setor) || a.horario.localeCompare(b.horario),
+        a.setor.localeCompare(b.setor, "pt-BR") ||
+        a.horario.localeCompare(b.horario, "pt-BR"),
     );
 
   return (
@@ -108,8 +114,7 @@ export default async function VolunteerPage({ params }: PageProps) {
       <ScheduleEditor
         volunteerId={volunteer.id}
         entries={entries}
-        sectors={sectors ?? []}
-        schedules={schedules ?? []}
+        atendimentos={atendimentos}
       />
     </main>
   );

@@ -11,6 +11,13 @@ import {
   type SimilarAssistido,
   type TreatmentInput,
 } from "@/lib/assistido";
+import {
+  atendimentoLabel,
+  mapAtendimento,
+  ATENDIMENTO_SELECT,
+  type AtendimentoItem,
+  type AtendimentoRow,
+} from "@/lib/atendimento";
 
 export interface ActionResult {
   ok: boolean;
@@ -92,40 +99,54 @@ export async function createAssistido(
     return { ok: false, message: "Inclua ao menos um tratamento." };
   }
 
-  const [{ data: sectors }, { data: distonias }] = await Promise.all([
-    supabase.from("cepzk_setor").select("id, nome").returns<
-      { id: number; nome: string }[]
-    >(),
+  // Precedência 0 (a entrevista do Atendimento Fraterno) não é tratamento:
+  // a tela não oferece e a action também não aceita.
+  const [{ data: atendimentoRows }, { data: distonias }] = await Promise.all([
+    supabase
+      .from("cepzk_atendimento")
+      .select(ATENDIMENTO_SELECT)
+      .gt("precedencia", 0)
+      .returns<AtendimentoRow[]>(),
     supabase.from("aca_distonia").select("id, nome").returns<
       { id: number; nome: string }[]
     >(),
   ]);
 
-  const sectorName = new Map((sectors ?? []).map((s) => [s.id, s.nome]));
+  const atendimentos = new Map<number, AtendimentoItem>(
+    (atendimentoRows ?? [])
+      .map(mapAtendimento)
+      .map((atendimento) => [atendimento.id, atendimento]),
+  );
   const distoniaName = new Map((distonias ?? []).map((d) => [d.id, d.nome]));
-  const seenSectors = new Set<number>();
+  const seenAtendimentos = new Set<number>();
 
   for (const treatment of input.treatments) {
-    if (!treatment.setorId || !treatment.horarioId) {
+    if (!treatment.atendimentoId) {
       return {
         ok: false,
-        message: "Escolha o setor e o horário de cada tratamento.",
+        message: "Escolha o atendimento de cada tratamento.",
       };
     }
-    if (seenSectors.has(treatment.setorId)) {
-      return {
-        ok: false,
-        message: `Há dois tratamentos para o setor ${
-          sectorName.get(treatment.setorId) ?? treatment.setorId
-        }. O assistido tem um tratamento por setor.`,
-      };
-    }
-    seenSectors.add(treatment.setorId);
 
-    if (
-      sectorName.get(treatment.setorId) === ACA_SECTOR &&
-      !treatment.distoniaId
-    ) {
+    const atendimento = atendimentos.get(treatment.atendimentoId);
+    if (!atendimento) {
+      return {
+        ok: false,
+        message: "Este atendimento não está disponível para tratamento.",
+      };
+    }
+
+    if (seenAtendimentos.has(atendimento.id)) {
+      return {
+        ok: false,
+        message: `Há dois tratamentos para ${atendimentoLabel(
+          atendimento,
+        )}. O assistido entra uma vez em cada atendimento.`,
+      };
+    }
+    seenAtendimentos.add(atendimento.id);
+
+    if (atendimento.setor === ACA_SECTOR && !treatment.distoniaId) {
       return { ok: false, message: "Informe a distonia relatada." };
     }
   }
@@ -158,8 +179,7 @@ export async function createAssistido(
       .from("cepzk_tratamento")
       .insert({
         assistido_id: created.id,
-        setor_id: treatment.setorId,
-        horario_id: treatment.horarioId,
+        atendimento_id: treatment.atendimentoId,
         obs: treatment.obs.trim() || null,
       })
       .select("id")
@@ -171,7 +191,9 @@ export async function createAssistido(
       );
     }
 
-    if (sectorName.get(treatment.setorId!) !== ACA_SECTOR) continue;
+    if (atendimentos.get(treatment.atendimentoId!)?.setor !== ACA_SECTOR) {
+      continue;
+    }
 
     const { error: acaError } = await supabase
       .from("aca_tratamento")

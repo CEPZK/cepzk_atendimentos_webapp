@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireDepartment } from "@/lib/current-volunteer";
+import { ATENDIMENTO_FRATERNO, type CatalogItem } from "@/lib/assistido";
 import {
-  ATENDIMENTO_FRATERNO,
-  type CatalogItem,
-  type SectorItem,
-} from "@/lib/assistido";
+  mapAtendimento,
+  sortAtendimentos,
+  ATENDIMENTO_SELECT,
+  type AtendimentoRow,
+} from "@/lib/atendimento";
 import { ArrowLeftIcon } from "@/app/icons";
 import { NewAssistidoFlow } from "./new-assistido-flow";
 
@@ -15,31 +17,18 @@ export const metadata: Metadata = {
   title: "Cadastrar assistido",
 };
 
-interface SectorRow {
-  id: number;
-  nome: string;
-  departamento: { nome: string } | { nome: string }[] | null;
-}
-
 export default async function NewAssistidoPage() {
   const { supabase } = await requireDepartment(ATENDIMENTO_FRATERNO);
 
-  const [
-    { data: sectorRows },
-    { data: schedules },
-    { data: distonias },
-    { data: queixas },
-  ] = await Promise.all([
+  const [{ data: atendimentoRows }, { data: distonias }, { data: queixas }] =
+    await Promise.all([
+    // Precedência 0 é a entrevista do Atendimento Fraterno, que não é um
+    // tratamento — o cadastro só oferece os atendimentos tratáveis.
     supabase
-      .from("cepzk_setor")
-      .select("id, nome, departamento:cepzk_departamento (nome)")
-      .order("nome")
-      .returns<SectorRow[]>(),
-    supabase
-      .from("cepzk_horario")
-      .select("id, nome")
-      .order("id")
-      .returns<CatalogItem[]>(),
+      .from("cepzk_atendimento")
+      .select(ATENDIMENTO_SELECT)
+      .gt("precedencia", 0)
+      .returns<AtendimentoRow[]>(),
     supabase
       .from("aca_distonia")
       .select("id, nome")
@@ -52,14 +41,9 @@ export default async function NewAssistidoPage() {
       .returns<CatalogItem[]>(),
   ]);
 
-  const sectors: SectorItem[] = (sectorRows ?? []).map((row) => ({
-    id: row.id,
-    nome: row.nome,
-    departamento: (Array.isArray(row.departamento)
-      ? row.departamento[0]
-      : row.departamento
-    )?.nome ?? null,
-  }));
+  const atendimentos = sortAtendimentos(
+    (atendimentoRows ?? []).map(mapAtendimento),
+  );
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
@@ -72,8 +56,7 @@ export default async function NewAssistidoPage() {
       </Link>
 
       <NewAssistidoFlow
-        sectors={sectors}
-        schedules={schedules ?? []}
+        atendimentos={atendimentos}
         distonias={distonias ?? []}
         queixas={queixas ?? []}
       />

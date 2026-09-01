@@ -9,6 +9,11 @@ import {
   type TreatmentView,
 } from "@/lib/assistido";
 import { fullName, type VolunteerProfile } from "@/lib/volunteer";
+import {
+  mapAtendimento,
+  ATENDIMENTO_SELECT,
+  type AtendimentoRow,
+} from "@/lib/atendimento";
 import { ArrowLeftIcon, HeartIcon } from "@/app/icons";
 
 export const dynamic = "force-dynamic";
@@ -48,8 +53,7 @@ interface TreatmentRow {
   id: number;
   estado: string;
   obs: string | null;
-  setor: { nome: string; departamento: { nome: string } | null } | null;
-  horario: { nome: string } | null;
+  atendimento: AtendimentoRow | AtendimentoRow[] | null;
   aca: { distonia: { nome: string } | null } | null;
   queixas: { queixa: { nome: string } | null }[] | null;
 }
@@ -71,7 +75,7 @@ export default async function AssistidoPage({ params }: PageProps) {
     supabase
       .from("cepzk_tratamento")
       .select(
-        "id, estado, obs, setor:cepzk_setor (nome, departamento:cepzk_departamento (nome)), horario:cepzk_horario (nome), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))",
+        `id, estado, obs, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))`,
       )
       .eq("assistido_id", id)
       .returns<TreatmentRow[]>(),
@@ -85,12 +89,13 @@ export default async function AssistidoPage({ params }: PageProps) {
 
   const treatments: TreatmentView[] = (treatmentRows ?? [])
     .map((row) => {
-      const setor = one(row.setor);
+      const atendimentoRow = one(row.atendimento);
+      const atendimento = atendimentoRow ? mapAtendimento(atendimentoRow) : null;
       return {
         id: row.id,
-        setor: setor?.nome ?? "Setor",
-        departamento: one(setor?.departamento)?.nome ?? null,
-        horario: one(row.horario)?.nome ?? "—",
+        setor: atendimento?.setor ?? "Setor",
+        departamento: atendimento?.departamento ?? null,
+        horario: atendimento?.horario ?? "—",
         estado: row.estado,
         obs: row.obs,
         distonia: one(one(row.aca)?.distonia)?.nome ?? null,
@@ -100,7 +105,11 @@ export default async function AssistidoPage({ params }: PageProps) {
           .sort((a, b) => a.localeCompare(b, "pt-BR")),
       };
     })
-    .sort((a, b) => a.setor.localeCompare(b.setor, "pt-BR"));
+    .sort(
+      (a, b) =>
+        a.setor.localeCompare(b.setor, "pt-BR") ||
+        a.horario.localeCompare(b.horario, "pt-BR"),
+    );
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">

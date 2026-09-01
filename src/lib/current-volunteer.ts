@@ -53,10 +53,12 @@ export interface VolunteerSector {
 }
 
 interface ScheduleSectorRow {
-  setor: {
-    id: number;
-    nome: string;
-    departamento: { nome: string } | null;
+  atendimento: {
+    setor: {
+      id: number;
+      nome: string;
+      departamento: { nome: string } | null;
+    } | null;
   } | null;
 }
 
@@ -73,15 +75,17 @@ export async function loadVolunteerSectors(
 ): Promise<VolunteerSector[]> {
   const { data } = await supabase
     .from("cepzk_escala")
-    .select("setor:cepzk_setor (id, nome, departamento:cepzk_departamento (nome))")
+    .select(
+      "atendimento:cepzk_atendimento (setor:cepzk_setor (id, nome, departamento:cepzk_departamento (nome)))",
+    )
     .eq("voluntario_id", volunteerId)
     .returns<ScheduleSectorRow[]>();
 
   const sectors = (data ?? [])
-    .map((row) => row.setor)
-    .filter((sector): sector is NonNullable<ScheduleSectorRow["setor"]> =>
-      Boolean(sector),
-    )
+    .map((row) => row.atendimento?.setor ?? null)
+    .filter((sector): sector is NonNullable<
+      NonNullable<ScheduleSectorRow["atendimento"]>["setor"]
+    > => Boolean(sector))
     .map((sector) => ({
       id: sector.id,
       nome: sector.nome,

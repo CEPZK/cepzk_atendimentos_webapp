@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import {
   assistidoInitials,
   type CatalogItem,
-  type SectorItem,
   type SimilarAssistido,
   type TreatmentInput,
 } from "@/lib/assistido";
+import type { AtendimentoItem } from "@/lib/atendimento";
 import { ChevronRightIcon, PlusIcon } from "@/app/icons";
 import { createAssistido, findSimilarAssistidos } from "../actions";
 import { emptyTreatment, FIELD_CLASS, TreatmentFields } from "./treatment-fields";
@@ -23,8 +23,7 @@ const SECONDARY_BUTTON =
   "w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 interface NewAssistidoFlowProps {
-  sectors: SectorItem[];
-  schedules: CatalogItem[];
+  atendimentos: AtendimentoItem[];
   distonias: CatalogItem[];
   queixas: CatalogItem[];
 }
@@ -37,8 +36,7 @@ interface NewAssistidoFlowProps {
  * person twice splits their history in two.
  */
 export function NewAssistidoFlow({
-  sectors,
-  schedules,
+  atendimentos,
   distonias,
   queixas,
 }: NewAssistidoFlowProps) {
@@ -201,10 +199,12 @@ export function NewAssistidoFlow({
     );
   }
 
-  const usedSectors = new Set(
-    treatments.map((treatment) => treatment.setorId).filter(Boolean),
+  // One treatment per atendimento: adding more than the catalogue holds
+  // would only produce duplicates.
+  const usedAtendimentos = new Set(
+    treatments.map((treatment) => treatment.atendimentoId).filter(Boolean),
   );
-  const canAddTreatment = usedSectors.size < sectors.length;
+  const canAddTreatment = usedAtendimentos.size < atendimentos.length;
 
   return (
     <>
@@ -243,8 +243,7 @@ export function NewAssistidoFlow({
                 key={index}
                 index={index}
                 treatment={treatment}
-                sectors={sectors}
-                schedules={schedules}
+                atendimentos={atendimentos}
                 distonias={distonias}
                 queixas={queixas}
                 canRemove={treatments.length > 1}

@@ -74,26 +74,24 @@ export async function updateVolunteer(
   return { ok: true, message: "Dados atualizados." };
 }
 
-/** Associates the volunteer with a sector/schedule pair. */
+/** Associates the volunteer with an atendimento (sector + schedule). */
 export async function addScheduleEntry(
   volunteerId: string,
-  setorId: number,
-  horarioId: number,
+  atendimentoId: number,
 ): Promise<ActionResult> {
   const { supabase } = await requireAdmin();
 
-  if (!Number.isInteger(setorId) || !Number.isInteger(horarioId)) {
-    return { ok: false, message: "Selecione o setor e o horário." };
+  if (!Number.isInteger(atendimentoId)) {
+    return { ok: false, message: "Selecione o atendimento." };
   }
 
   const { error } = await supabase.from("cepzk_escala").insert({
     voluntario_id: volunteerId,
-    setor_id: setorId,
-    horario_id: horarioId,
+    atendimento_id: atendimentoId,
   });
 
   if (error) {
-    // 23505 = unique_violation (the pair is already associated)
+    // 23505 = unique_violation (already associated with this atendimento)
     return {
       ok: false,
       message:
@@ -107,11 +105,10 @@ export async function addScheduleEntry(
   return { ok: true, message: "Escala associada." };
 }
 
-/** Removes the volunteer from a sector/schedule pair. */
+/** Removes the volunteer from an atendimento. */
 export async function removeScheduleEntry(
   volunteerId: string,
-  setorId: number,
-  horarioId: number,
+  atendimentoId: number,
 ): Promise<ActionResult> {
   const { supabase } = await requireAdmin();
 
@@ -119,8 +116,7 @@ export async function removeScheduleEntry(
     .from("cepzk_escala")
     .delete()
     .eq("voluntario_id", volunteerId)
-    .eq("setor_id", setorId)
-    .eq("horario_id", horarioId);
+    .eq("atendimento_id", atendimentoId);
 
   if (error) {
     return {

@@ -34,10 +34,9 @@ export interface Volunteer extends VolunteerProfile {
   data_criacao?: string;
 }
 
-/** One row of `cepzk_escala`, joined with the catalogues. */
+/** One row of `cepzk_escala`, joined with the atendimento catalogue. */
 export interface ScheduleEntry {
-  setor_id: number;
-  horario_id: number;
+  atendimento_id: number;
   setor: string;
   departamento: string | null;
   horario: string;
