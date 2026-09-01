@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/current-volunteer";
+import { getSupabase, requireAdmin } from "@/lib/current-volunteer";
 import {
   fullName,
   type ScheduleEntry,
@@ -24,18 +25,43 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/** Read once per request, shared with `generateMetadata`. */
+const loadVolunteer = cache(async (id: string) => {
+  const supabase = await getSupabase();
+  const [, volunteer, escala, atendimentos] = await Promise.all([
+    requireAdmin(),
+    supabase
+      .from("cepzk_voluntario")
+      .select("id, nome, sobrenome, email, telefone, papel, data_criacao")
+      .eq("id", id)
+      .maybeSingle<Volunteer>(),
+    supabase
+      .from("cepzk_escala")
+      .select(`atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT})`)
+      .eq("voluntario_id", id)
+      .returns<ScheduleRow[]>(),
+    supabase
+      .from("cepzk_atendimento")
+      .select(ATENDIMENTO_SELECT)
+      .returns<AtendimentoRow[]>(),
+  ]);
+
+  return {
+    volunteer: volunteer.data,
+    scheduleRows: escala.data,
+    atendimentoRows: atendimentos.data,
+  };
+});
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const { supabase } = await requireAdmin();
-  const { data } = await supabase
-    .from("cepzk_voluntario")
-    .select("nome, sobrenome")
-    .eq("id", id)
-    .maybeSingle<Pick<Volunteer, "nome" | "sobrenome">>();
+  const { volunteer } = await loadVolunteer(id);
 
-  return { title: data ? fullName(data) || "Voluntário" : "Voluntário" };
+  return {
+    title: volunteer ? fullName(volunteer) || "Voluntário" : "Voluntário",
+  };
 }
 
 interface ScheduleRow {
@@ -45,25 +71,8 @@ interface ScheduleRow {
 
 export default async function VolunteerPage({ params }: PageProps) {
   const { id } = await params;
-  const { supabase, volunteer: currentUser } = await requireAdmin();
-
-  const [{ data: volunteer }, { data: scheduleRows }, { data: atendimentoRows }] =
-    await Promise.all([
-      supabase
-        .from("cepzk_voluntario")
-        .select("id, nome, sobrenome, email, telefone, papel, data_criacao")
-        .eq("id", id)
-        .maybeSingle<Volunteer>(),
-      supabase
-        .from("cepzk_escala")
-        .select(`atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT})`)
-        .eq("voluntario_id", id)
-        .returns<ScheduleRow[]>(),
-      supabase
-        .from("cepzk_atendimento")
-        .select(ATENDIMENTO_SELECT)
-        .returns<AtendimentoRow[]>(),
-    ]);
+  const [{ volunteer, scheduleRows, atendimentoRows }, { volunteer: currentUser }] =
+    await Promise.all([loadVolunteer(id), requireAdmin()]);
 
   if (!volunteer) {
     notFound();

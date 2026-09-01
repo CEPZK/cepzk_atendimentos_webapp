@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireDepartment } from "@/lib/current-volunteer";
+import { getSupabase, requireDepartment } from "@/lib/current-volunteer";
 import { ATENDIMENTO_FRATERNO, type Assistido } from "@/lib/assistido";
 import { ArrowLeftIcon } from "@/app/icons";
 import { AssistidosList } from "./assistidos-list";
@@ -12,13 +12,18 @@ export const metadata: Metadata = {
 };
 
 export default async function AssistidosPage() {
-  const { supabase } = await requireDepartment(ATENDIMENTO_FRATERNO);
-
-  const { data, error } = await supabase
-    .from("cepzk_assistido")
-    .select("id, nome_completo")
-    .order("nome_completo", { ascending: true })
-    .returns<Assistido[]>();
+  // A consulta sai junto com a checagem de acesso: são duas idas ao
+  // Supabase que não dependem uma da outra, e em série elas dobram o
+  // tempo até a tela aparecer. A guarda continua bloqueando a renderização.
+  const supabase = await getSupabase();
+  const [, { data, error }] = await Promise.all([
+    requireDepartment(ATENDIMENTO_FRATERNO),
+    supabase
+      .from("cepzk_assistido")
+      .select("id, nome_completo")
+      .order("nome_completo", { ascending: true })
+      .returns<Assistido[]>(),
+  ]);
 
   // Postgres orders by byte value, which puts "Ângela" after "Zulmira":
   // sort with the Brazilian locale so the list reads alphabetically.

@@ -1,4 +1,7 @@
 {
+  "regions": [
+    "gru1"
+  ],
   "headers": [
     {
       "source": "/sw.js",

@@ -34,6 +34,8 @@ export interface TreatmentView {
   setor: string;
   departamento: string | null;
   horario: string;
+  /** Priority of the atendimento: the order the treatments are read in. */
+  precedencia: number | null;
   estado: string;
   obs: string | null;
   /** Acolher com Amor only. */
@@ -50,13 +52,9 @@ export interface TreatmentInput {
   obs: string;
 }
 
-export const TREATMENT_STATE_LABELS: Record<string, string> = {
-  pendente: "Em tratamento",
-  completo: "Alta",
-};
-
+/** "Situação: pendente" — the state as recorded in `cepzk_tratamento`. */
 export function treatmentStateLabel(estado: string): string {
-  return TREATMENT_STATE_LABELS[estado] ?? estado;
+  return `Situação: ${estado}`;
 }
 
 // -----------------------------------------------------------------------------

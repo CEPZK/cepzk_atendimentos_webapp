@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireDepartment } from "@/lib/current-volunteer";
+import { getSupabase, requireDepartment } from "@/lib/current-volunteer";
 import {
   ATENDIMENTO_FRATERNO,
   treatmentStateLabel,
@@ -22,18 +23,40 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Read once per request: the page and `generateMetadata` ask for the same
+ * assistido, and each extra round trip is felt as a slower screen.
+ */
+const loadAssistido = cache(async (id: string) => {
+  const supabase = await getSupabase();
+  const [, assistido, treatments] = await Promise.all([
+    requireDepartment(ATENDIMENTO_FRATERNO),
+    supabase
+      .from("cepzk_assistido")
+      .select(
+        "id, nome_completo, data_criacao, entrevistador:cepzk_voluntario (nome, sobrenome)",
+      )
+      .eq("id", id)
+      .maybeSingle<AssistidoRow>(),
+    supabase
+      .from("cepzk_tratamento")
+      .select(
+        `id, estado, obs, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))`,
+      )
+      .eq("assistido_id", id)
+      .returns<TreatmentRow[]>(),
+  ]);
+
+  return { assistido: assistido.data, treatmentRows: treatments.data };
+});
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const { supabase } = await requireDepartment(ATENDIMENTO_FRATERNO);
-  const { data } = await supabase
-    .from("cepzk_assistido")
-    .select("nome_completo")
-    .eq("id", id)
-    .maybeSingle<{ nome_completo: string }>();
+  const { assistido } = await loadAssistido(id);
 
-  return { title: data?.nome_completo ?? "Assistido" };
+  return { title: assistido?.nome_completo ?? "Assistido" };
 }
 
 /** PostgREST returns embedded rows as an object or as a single-item array. */
@@ -62,24 +85,7 @@ const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
 
 export default async function AssistidoPage({ params }: PageProps) {
   const { id } = await params;
-  const { supabase } = await requireDepartment(ATENDIMENTO_FRATERNO);
-
-  const [{ data: assistido }, { data: treatmentRows }] = await Promise.all([
-    supabase
-      .from("cepzk_assistido")
-      .select(
-        "id, nome_completo, data_criacao, entrevistador:cepzk_voluntario (nome, sobrenome)",
-      )
-      .eq("id", id)
-      .maybeSingle<AssistidoRow>(),
-    supabase
-      .from("cepzk_tratamento")
-      .select(
-        `id, estado, obs, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))`,
-      )
-      .eq("assistido_id", id)
-      .returns<TreatmentRow[]>(),
-  ]);
+  const { assistido, treatmentRows } = await loadAssistido(id);
 
   if (!assistido) {
     notFound();
@@ -96,6 +102,7 @@ export default async function AssistidoPage({ params }: PageProps) {
         setor: atendimento?.setor ?? "Setor",
         departamento: atendimento?.departamento ?? null,
         horario: atendimento?.horario ?? "—",
+        precedencia: atendimento?.precedencia ?? null,
         estado: row.estado,
         obs: row.obs,
         distonia: one(one(row.aca)?.distonia)?.nome ?? null,
@@ -105,8 +112,12 @@ export default async function AssistidoPage({ params }: PageProps) {
           .sort((a, b) => a.localeCompare(b, "pt-BR")),
       };
     })
+    // A precedência do atendimento manda: o mais prioritário primeiro.
+    // Sem precedência definida, o tratamento vai para o fim da lista.
     .sort(
       (a, b) =>
+        (a.precedencia ?? Number.MAX_SAFE_INTEGER) -
+          (b.precedencia ?? Number.MAX_SAFE_INTEGER) ||
         a.setor.localeCompare(b.setor, "pt-BR") ||
         a.horario.localeCompare(b.horario, "pt-BR"),
     );

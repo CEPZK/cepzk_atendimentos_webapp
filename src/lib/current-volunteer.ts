@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin, isProfileComplete, type Volunteer } from "@/lib/volunteer";
@@ -13,17 +14,29 @@ export interface CurrentVolunteer {
 const VOLUNTEER_COLUMNS = "id, nome, sobrenome, email, telefone, papel";
 
 /**
+ * The request's Supabase client.
+ *
+ * Cached per request so a page and its `generateMetadata` share one
+ * client — and, more importantly, so the guard below runs its network
+ * calls only once per navigation.
+ */
+export const getSupabase = cache(async (): Promise<SupabaseClient> => {
+  const supabase = await createClient();
+  if (!supabase) {
+    redirect("/login?error=config");
+  }
+  return supabase;
+});
+
+/**
  * Loads the signed-in volunteer.
  *
  * Redirects to the login screen when there is no session and to the
  * profile completion screen while the profile is incomplete, so every
  * page behind it can assume a complete profile.
  */
-export async function requireVolunteer(): Promise<CurrentVolunteer> {
-  const supabase = await createClient();
-  if (!supabase) {
-    redirect("/login?error=config");
-  }
+export const requireVolunteer = cache(async (): Promise<CurrentVolunteer> => {
+  const supabase = await getSupabase();
 
   const {
     data: { user },
@@ -43,7 +56,7 @@ export async function requireVolunteer(): Promise<CurrentVolunteer> {
   }
 
   return { supabase, volunteer };
-}
+});
 
 /** A sector the volunteer is scheduled for, with its department. */
 export interface VolunteerSector {
@@ -69,10 +82,10 @@ interface ScheduleSectorRow {
  * belongs to a department, and only who is scheduled for it (plus the
  * admins) gets to see it.
  */
-export async function loadVolunteerSectors(
+export const loadVolunteerSectors = cache(async (
   supabase: SupabaseClient,
   volunteerId: string,
-): Promise<VolunteerSector[]> {
+): Promise<VolunteerSector[]> => {
   const { data } = await supabase
     .from("cepzk_escala")
     .select(
@@ -93,7 +106,7 @@ export async function loadVolunteerSectors(
     }));
 
   return [...new Map(sectors.map((sector) => [sector.id, sector])).values()];
-}
+});
 
 /** Whether these sectors give access to a department's features. */
 export function belongsToDepartment(
@@ -110,13 +123,13 @@ export function belongsToDepartment(
  * (RLS v1), so this check is what actually protects the administration
  * screens — it must be repeated inside every Server Action.
  */
-export async function requireAdmin(): Promise<CurrentVolunteer> {
+export const requireAdmin = cache(async (): Promise<CurrentVolunteer> => {
   const current = await requireVolunteer();
   if (!isAdmin(current.volunteer)) {
     redirect("/");
   }
   return current;
-}
+});
 
 /**
  * Same as `requireVolunteer`, but only for who works in `department` —
@@ -126,9 +139,9 @@ export async function requireAdmin(): Promise<CurrentVolunteer> {
  * (RLS v1), so this is the real gate and must be repeated inside every
  * Server Action of the department's screens.
  */
-export async function requireDepartment(
+export const requireDepartment = cache(async (
   department: string,
-): Promise<CurrentVolunteer> {
+): Promise<CurrentVolunteer> => {
   const current = await requireVolunteer();
   if (isAdmin(current.volunteer)) return current;
 
@@ -141,4 +154,4 @@ export async function requireDepartment(
   }
 
   return current;
-}
+});

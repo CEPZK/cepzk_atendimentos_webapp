@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireDepartment } from "@/lib/current-volunteer";
+import { getSupabase, requireDepartment } from "@/lib/current-volunteer";
 import { ATENDIMENTO_FRATERNO, type CatalogItem } from "@/lib/assistido";
 import {
   mapAtendimento,
@@ -18,10 +18,10 @@ export const metadata: Metadata = {
 };
 
 export default async function NewAssistidoPage() {
-  const { supabase } = await requireDepartment(ATENDIMENTO_FRATERNO);
-
-  const [{ data: atendimentoRows }, { data: distonias }, { data: queixas }] =
+  const supabase = await getSupabase();
+  const [, { data: atendimentoRows }, { data: distonias }, { data: queixas }] =
     await Promise.all([
+    requireDepartment(ATENDIMENTO_FRATERNO),
     // Precedência 0 é a entrevista do Atendimento Fraterno, que não é um
     // tratamento — o cadastro só oferece os atendimentos tratáveis.
     supabase

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireAdmin } from "@/lib/current-volunteer";
+import { getSupabase, requireAdmin } from "@/lib/current-volunteer";
 import type { Volunteer } from "@/lib/volunteer";
 import { ArrowLeftIcon } from "@/app/icons";
 import { VolunteersList } from "./volunteers-list";
@@ -12,13 +12,17 @@ export const metadata: Metadata = {
 };
 
 export default async function VolunteersPage() {
-  const { supabase } = await requireAdmin();
-
-  const { data, error } = await supabase
-    .from("cepzk_voluntario")
-    .select("id, nome, sobrenome, email, telefone, papel")
-    .order("nome", { ascending: true })
-    .returns<Volunteer[]>();
+  // Guarda e consulta em paralelo: em série, cada tela custa duas idas
+  // ao Supabase antes de aparecer.
+  const supabase = await getSupabase();
+  const [, { data, error }] = await Promise.all([
+    requireAdmin(),
+    supabase
+      .from("cepzk_voluntario")
+      .select("id, nome, sobrenome, email, telefone, papel")
+      .order("nome", { ascending: true })
+      .returns<Volunteer[]>(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
