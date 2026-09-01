@@ -24,6 +24,10 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 export function AuthCallback() {
   const router = useRouter();
   const [isSlow, setIsSlow] = useState(false);
+  const [failure, setFailure] = useState<{
+    message: string;
+    detail: string;
+  } | null>(null);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -57,9 +61,17 @@ export function AuthCallback() {
     let cancelled = false;
     const slowTimer = window.setTimeout(() => setIsSlow(true), 4000);
 
-    function failed(reason: string) {
+    // The failure stays on screen (with the real reason) instead of
+    // bouncing back to a login form that gives no clue about what broke.
+    function failed(reason: string, message?: string) {
       console.error(`[cepzk] Sign-in callback failed: ${reason}`);
-      if (!cancelled) router.replace("/login?error=1");
+      if (cancelled) return;
+      setFailure({
+        message:
+          message ??
+          "Não foi possível concluir seu acesso. O link pode ter expirado ou já ter sido usado — solicite um novo.",
+        detail: reason,
+      });
     }
 
     async function finishSignIn() {
@@ -69,8 +81,15 @@ export function AuthCallback() {
       }
 
       if (!isSupabaseConfigured()) {
-        console.error("[cepzk] Sign-in callback failed: Supabase not configured");
-        if (!cancelled) router.replace("/login?error=config");
+        failed(
+          "Supabase credentials are missing in the browser",
+          "A plataforma não está configurada corretamente (credenciais do Supabase ausentes). Avise um administrador.",
+        );
+        return;
+      }
+
+      if (!accessToken && !code && !tokenHash) {
+        failed("no credentials in the callback URL");
         return;
       }
 
@@ -130,6 +149,31 @@ export function AuthCallback() {
       window.clearTimeout(slowTimer);
     };
   }, [router]);
+
+  if (failure) {
+    return (
+      <main className="flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+            Não foi possível entrar
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            {failure.message}
+          </p>
+          <details className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            <summary className="cursor-pointer">Detalhes técnicos</summary>
+            <p className="mt-2 break-words font-mono">{failure.detail}</p>
+          </details>
+          <a
+            href="/login"
+            className="mt-6 block rounded-lg bg-teal-700 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-teal-800"
+          >
+            Voltar para o login
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">

@@ -4,7 +4,13 @@ import { updateSession } from "@/lib/supabase/middleware";
 // The login screen and the auth callback finish the magic link / invite
 // flow, so they must stay accessible without a session.
 function isPublicPath(pathname: string): boolean {
-  return pathname === "/login" || pathname === "/auth/callback";
+  return (
+    pathname === "/login" ||
+    pathname === "/auth/callback" ||
+    // Configuration self-check: must be reachable while signed out,
+    // otherwise it cannot diagnose a broken login.
+    pathname === "/diagnostico"
+  );
 }
 
 // Static files and PWA assets are served as-is.
@@ -42,7 +48,7 @@ export async function proxy(request: NextRequest) {
     // every request to /login, which explains what is missing instead of
     // failing with a blank 500.
     if (!isConfigured) {
-      if (pathname === "/login") {
+      if (isPublicPath(pathname)) {
         return supabaseResponse;
       }
       const loginUrl = new URL("/login", request.url);
