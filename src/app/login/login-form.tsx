@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import {
+  SupabaseNotConfiguredError,
+  isSupabaseConfigured,
+} from "@/lib/supabase/client";
 
 interface LoginFormProps {
   /** Where to go after signing in. */
@@ -20,6 +24,14 @@ export function LoginForm({
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // `isConfigured` only reflects the server; the bundle running in the
+  // browser may itself have been built without the credentials.
+  const isConfiguredInBrowser = useSyncExternalStore(
+    () => () => {},
+    () => isSupabaseConfigured(),
+    () => true,
+  );
+  const canSignIn = isConfigured && isConfiguredInBrowser;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,9 +66,12 @@ export function LoginForm({
         setIsSending(false);
         return;
       }
-    } catch {
+    } catch (cause) {
+      console.error("[cepzk] Sign-in request failed", cause);
       setError(
-        "Serviço temporariamente indisponível. Tente novamente em alguns instantes.",
+        cause instanceof SupabaseNotConfiguredError
+          ? "A plataforma não está configurada corretamente (credenciais do Supabase ausentes nesta versão do site). Avise um administrador."
+          : "Serviço temporariamente indisponível. Tente novamente em alguns instantes.",
       );
       setIsSending(false);
       return;
@@ -164,7 +179,7 @@ export function LoginForm({
 
         <button
           type="submit"
-          disabled={isSending || !isConfigured}
+          disabled={isSending || !canSignIn}
           className="w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSending ? "Enviando..." : "Enviar link de acesso"}

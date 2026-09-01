@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { RegisterServiceWorker } from "@/app/register-sw";
+import { SupabaseEnvScript } from "@/app/supabase-env";
 
 export const metadata: Metadata = {
   title: {
@@ -39,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
+        <SupabaseEnvScript />
         <RegisterServiceWorker />
         {children}
       </body>
