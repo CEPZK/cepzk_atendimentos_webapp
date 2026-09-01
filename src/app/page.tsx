@@ -9,6 +9,9 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const supabase = await createClient();
+  if (!supabase) {
+    redirect("/login?error=config");
+  }
 
   const {
     data: { user },

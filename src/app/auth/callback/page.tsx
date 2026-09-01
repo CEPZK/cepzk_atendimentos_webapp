@@ -9,8 +9,8 @@ import { sanitizeNextPath } from "@/lib/url";
  * Finishes the sign-in flow:
  *
  * - Magic link (PKCE): exchanges the `code` query parameter for a session;
- * - Invite link: the access token arrives in the URL hash fragment and is
- *   captured automatically by the Supabase client when the session is read.
+ * - Magic link / invite (implicit): the tokens arrive in the URL hash
+ *   fragment (`#access_token=...&refresh_token=...`) and are applied here.
  *
  * After signing in, the user is redirected to the page they were trying to
  * reach (`next`), which in turn sends first-time users to the profile
@@ -21,15 +21,28 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    const hashParams = new URLSearchParams(
+      window.location.hash.replace(/^#/, ""),
+    );
+
     const code = url.searchParams.get("code");
-    const error = url.searchParams.get("error");
-    const next = sanitizeNextPath(url.searchParams.get("next"));
+    const error =
+      url.searchParams.get("error") ?? hashParams.get("error");
+    const next = sanitizeNextPath(
+      url.searchParams.get("next") ?? hashParams.get("next"),
+    );
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
 
     let cancelled = false;
 
+    function failed() {
+      if (!cancelled) router.replace("/login?error=1");
+    }
+
     async function finishSignIn() {
       if (error) {
-        router.replace(`/login?error=1`);
+        failed();
         return;
       }
 
@@ -39,12 +52,23 @@ export default function AuthCallbackPage() {
         const { error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code);
         if (exchangeError) {
-          if (!cancelled) router.replace(`/login?error=1`);
+          failed();
           return;
         }
+      } else if (accessToken && refreshToken) {
+        // Implicit flow (invites and magic links configured without PKCE).
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (setSessionError) {
+          failed();
+          return;
+        }
+        // Remove the tokens from the address bar.
+        window.history.replaceState(null, "", url.pathname + url.search);
       }
 
-      // For invites the tokens are detected in the URL hash here.
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -55,11 +79,17 @@ export default function AuthCallbackPage() {
         router.replace(next);
         router.refresh();
       } else {
-        router.replace(`/login?error=1`);
+        failed();
       }
     }
 
-    finishSignIn();
+    finishSignIn().catch((cause) => {
+      // Missing configuration or an unreachable Supabase must not leave the
+      // user stuck on the "finishing" screen.
+      console.error("[cepzk] Sign-in callback failed", cause);
+      failed();
+    });
+
     return () => {
       cancelled = true;
     };
