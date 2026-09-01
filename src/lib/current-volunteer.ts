@@ -45,6 +45,60 @@ export async function requireVolunteer(): Promise<CurrentVolunteer> {
   return { supabase, volunteer };
 }
 
+/** A sector the volunteer is scheduled for, with its department. */
+export interface VolunteerSector {
+  id: number;
+  nome: string;
+  departamento: string | null;
+}
+
+interface ScheduleSectorRow {
+  setor: {
+    id: number;
+    nome: string;
+    departamento: { nome: string } | null;
+  } | null;
+}
+
+/**
+ * Sectors the volunteer works in, taken from the schedule.
+ *
+ * This is what releases the features on the home screen: each card
+ * belongs to a department, and only who is scheduled for it (plus the
+ * admins) gets to see it.
+ */
+export async function loadVolunteerSectors(
+  supabase: SupabaseClient,
+  volunteerId: string,
+): Promise<VolunteerSector[]> {
+  const { data } = await supabase
+    .from("cepzk_escala")
+    .select("setor:cepzk_setor (id, nome, departamento:cepzk_departamento (nome))")
+    .eq("voluntario_id", volunteerId)
+    .returns<ScheduleSectorRow[]>();
+
+  const sectors = (data ?? [])
+    .map((row) => row.setor)
+    .filter((sector): sector is NonNullable<ScheduleSectorRow["setor"]> =>
+      Boolean(sector),
+    )
+    .map((sector) => ({
+      id: sector.id,
+      nome: sector.nome,
+      departamento: sector.departamento?.nome ?? null,
+    }));
+
+  return [...new Map(sectors.map((sector) => [sector.id, sector])).values()];
+}
+
+/** Whether these sectors give access to a department's features. */
+export function belongsToDepartment(
+  sectors: VolunteerSector[],
+  department: string,
+): boolean {
+  return sectors.some((sector) => sector.departamento === department);
+}
+
 /**
  * Same as `requireVolunteer`, but only for admins.
  *
@@ -57,5 +111,30 @@ export async function requireAdmin(): Promise<CurrentVolunteer> {
   if (!isAdmin(current.volunteer)) {
     redirect("/");
   }
+  return current;
+}
+
+/**
+ * Same as `requireVolunteer`, but only for who works in `department` —
+ * admins always get through.
+ *
+ * The database still grants full access to every authenticated user
+ * (RLS v1), so this is the real gate and must be repeated inside every
+ * Server Action of the department's screens.
+ */
+export async function requireDepartment(
+  department: string,
+): Promise<CurrentVolunteer> {
+  const current = await requireVolunteer();
+  if (isAdmin(current.volunteer)) return current;
+
+  const sectors = await loadVolunteerSectors(
+    current.supabase,
+    current.volunteer.id,
+  );
+  if (!belongsToDepartment(sectors, department)) {
+    redirect("/");
+  }
+
   return current;
 }

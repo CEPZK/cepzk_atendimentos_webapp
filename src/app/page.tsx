@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
-import { requireVolunteer } from "@/lib/current-volunteer";
+import {
+  belongsToDepartment,
+  loadVolunteerSectors,
+  requireVolunteer,
+} from "@/lib/current-volunteer";
 import { isAdmin, ROLE_LABELS } from "@/lib/volunteer";
+import { ATENDIMENTO_FRATERNO } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
-import { UsersIcon } from "@/app/icons";
+import { ClipboardUserIcon, UsersIcon } from "@/app/icons";
 
 // Depends on the request cookies (session): never prerender.
 export const dynamic = "force-dynamic";
@@ -14,20 +19,9 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const { supabase, volunteer } = await requireVolunteer();
 
-  // Sectors the volunteer is scheduled for — the upcoming cards are
-  // released per sector, so the home screen already knows them.
-  const { data: schedule } = await supabase
-    .from("cepzk_escala")
-    .select("setor:cepzk_setor (id, nome)")
-    .eq("voluntario_id", volunteer.id);
-
-  const sectors = (schedule ?? [])
-    .flatMap((row) => (Array.isArray(row.setor) ? row.setor : [row.setor]))
-    .filter((sector): sector is { id: number; nome: string } => Boolean(sector));
-
-  const uniqueSectors = [
-    ...new Map(sectors.map((sector) => [sector.id, sector])).values(),
-  ];
+  // Sectors the volunteer is scheduled for: the cards are released per
+  // department, so the home screen needs them to decide what to show.
+  const sectors = await loadVolunteerSectors(supabase, volunteer.id);
 
   const cards = [
     {
@@ -38,6 +32,17 @@ export default async function HomePage() {
         "Consultar e editar os dados dos voluntários e suas escalas.",
       icon: <UsersIcon />,
       isVisible: isAdmin(volunteer),
+    },
+    {
+      key: "assistidos",
+      href: "/assistidos",
+      title: "Lista de Assistidos",
+      description:
+        "Consultar os assistidos e seus tratamentos, e cadastrar novos.",
+      icon: <ClipboardUserIcon />,
+      isVisible:
+        isAdmin(volunteer) ||
+        belongsToDepartment(sectors, ATENDIMENTO_FRATERNO),
     },
   ].filter((card) => card.isVisible);
 
@@ -52,7 +57,7 @@ export default async function HomePage() {
           <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
             {ROLE_LABELS[volunteer.papel]}
           </span>
-          {uniqueSectors.map((sector) => (
+          {sectors.map((sector) => (
             <span
               key={sector.id}
               className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
