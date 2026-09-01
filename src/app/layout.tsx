@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { RegisterServiceWorker } from "@/app/register-sw";
 import { SupabaseEnvScript } from "@/app/supabase-env";
+import { AuthTokensHandler } from "@/app/auth-tokens-handler";
 
 export const metadata: Metadata = {
   title: {
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <SupabaseEnvScript />
         <RegisterServiceWorker />
+        <AuthTokensHandler />
         {children}
       </body>
     </html>
