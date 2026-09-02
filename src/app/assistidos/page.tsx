@@ -43,6 +43,10 @@ export default async function AssistidosPage() {
 
   const error = everyone.error ?? treatments.error;
 
+  // Para quem vê tudo, manda o tratamento mais pendente. Para os demais
+  // times, a consulta acima só trouxe os tratamentos da sua escala: se um
+  // deles já está em alta, o assistido está encerrado para eles e desce
+  // para o fim da lista.
   const assistidos = buildAssistidoList(
     everyone.data ?? [],
     (treatments.data ?? []).map((row) => ({
@@ -50,6 +54,7 @@ export default async function AssistidosPage() {
       estado: row.estado,
       nome_completo: row.assistido?.nome_completo,
     })),
+    isFull ? "mais-pendente" : "mais-avancado",
   );
 
   return (

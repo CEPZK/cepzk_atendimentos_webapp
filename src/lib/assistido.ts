@@ -93,16 +93,8 @@ function normalizeState(estado: string): string {
     .trim();
 }
 
-/** `completo` is what the first version of the schema wrote for "alta". */
-const STATE_ALIASES: Record<string, string> = {
-  completo: ESTADO_ALTA,
-  concluido: ESTADO_ALTA,
-  "em atendimento": ESTADO_EM_TRATAMENTO,
-};
-
 export function canonicalState(estado: string): string {
-  const normalized = normalizeState(estado);
-  return STATE_ALIASES[normalized] ?? normalized;
+  return normalizeState(estado);
 }
 
 export function isState(estado: string, expected: string): boolean {
@@ -110,15 +102,22 @@ export function isState(estado: string, expected: string): boolean {
 }
 
 /**
- * Sort key: pendente, em tratamento, alta — unknown states go just
- * before the discharged ones, so nobody disappears at the bottom.
+ * Sort key: pendente, em tratamento, alta.
+ *
+ * The states between these will be filled in later, so anything unknown
+ * sits just before the discharged ones — a new state never disappears at
+ * the bottom of the list.
  */
 export function treatmentStateRank(estado: string | null | undefined): number {
   if (!estado) return TREATMENT_STATE_ORDER.length;
   const position = TREATMENT_STATE_ORDER.indexOf(
     canonicalState(estado) as (typeof TREATMENT_STATE_ORDER)[number],
   );
-  return position === -1 ? TREATMENT_STATE_ORDER.length - 0.5 : position;
+  // Um estado ainda não previsto entra logo antes da alta: aparece na
+  // lista com quem ainda está em tratamento, não no fim junto das altas.
+  return position === -1
+    ? TREATMENT_STATE_ORDER.indexOf(ESTADO_ALTA) - 0.5
+    : position;
 }
 
 /** "Situação: pendente" — the state as recorded in `cepzk_tratamento`. */
@@ -150,9 +149,21 @@ export function treatmentStateAction(
 }
 
 /**
- * The assistidos list: one row per person, carrying the most pending
- * state among the treatments this volunteer may see, ordered by state
- * (pendente, em tratamento, alta) and then alphabetically.
+ * Which treatment decides where the assistido sits in the list, when
+ * there is more than one:
+ *
+ * - `"mais-pendente"` — the earliest state (Atendimento Fraterno and
+ *   admins, who see everybody: what still needs attention comes first);
+ * - `"mais-avancado"` — the latest state. This is what the other teams
+ *   get: the list only carries the treatments of their own escala, so an
+ *   alta there means the assistido is done for them and goes to the end.
+ */
+export type ListStateRule = "mais-pendente" | "mais-avancado";
+
+/**
+ * The assistidos list: one row per person, carrying the state of the
+ * treatment that governs it, ordered by state (pendente, em tratamento,
+ * alta) and then alphabetically.
  *
  * `assistidos` is empty for who only sees their own atendimentos — the
  * names then come from the treatments themselves.
@@ -164,6 +175,7 @@ export function buildAssistidoList(
     estado: string;
     nome_completo?: string | null;
   }[],
+  rule: ListStateRule = "mais-pendente",
 ): AssistidoListItem[] {
   const byId = new Map<number, AssistidoListItem>();
 
@@ -178,13 +190,15 @@ export function buildAssistidoList(
       estado: null,
     };
 
-    const isMorePending =
+    const governs =
       current.estado === null ||
-      treatmentStateRank(row.estado) < treatmentStateRank(current.estado);
+      (rule === "mais-pendente"
+        ? treatmentStateRank(row.estado) < treatmentStateRank(current.estado)
+        : treatmentStateRank(row.estado) > treatmentStateRank(current.estado));
 
     byId.set(row.assistido_id, {
       ...current,
-      estado: isMorePending ? row.estado : current.estado,
+      estado: governs ? row.estado : current.estado,
     });
   }
 
