@@ -149,21 +149,16 @@ export function treatmentStateAction(
 }
 
 /**
- * Which treatment decides where the assistido sits in the list, when
- * there is more than one:
- *
- * - `"mais-pendente"` — the earliest state (Atendimento Fraterno and
- *   admins, who see everybody: what still needs attention comes first);
- * - `"mais-avancado"` — the latest state. This is what the other teams
- *   get: the list only carries the treatments of their own escala, so an
- *   alta there means the assistido is done for them and goes to the end.
- */
-export type ListStateRule = "mais-pendente" | "mais-avancado";
-
-/**
  * The assistidos list: one row per person, carrying the state of the
  * treatment that governs it, ordered by state (pendente, em tratamento,
  * alta) and then alphabetically.
+ *
+ * When there is more than one treatment, the **most pending** one wins.
+ * Outside the Atendimento Fraterno the list only carries the treatments
+ * of the volunteer's own escala, so the assistido reaches the end of the
+ * list exactly when everything that is theirs is in alta — a volunteer
+ * scheduled for several atendimentos does not lose sight of the ones
+ * still open because of a single discharge.
  *
  * `assistidos` is empty for who only sees their own atendimentos — the
  * names then come from the treatments themselves.
@@ -175,7 +170,6 @@ export function buildAssistidoList(
     estado: string;
     nome_completo?: string | null;
   }[],
-  rule: ListStateRule = "mais-pendente",
 ): AssistidoListItem[] {
   const byId = new Map<number, AssistidoListItem>();
 
@@ -192,9 +186,7 @@ export function buildAssistidoList(
 
     const governs =
       current.estado === null ||
-      (rule === "mais-pendente"
-        ? treatmentStateRank(row.estado) < treatmentStateRank(current.estado)
-        : treatmentStateRank(row.estado) > treatmentStateRank(current.estado));
+      treatmentStateRank(row.estado) < treatmentStateRank(current.estado);
 
     byId.set(row.assistido_id, {
       ...current,
