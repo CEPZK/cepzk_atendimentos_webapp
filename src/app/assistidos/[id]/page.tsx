@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { cache } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getSupabase, requireDepartment } from "@/lib/current-volunteer";
+import { notFound, redirect } from "next/navigation";
+import { requireAssistidoAccess } from "@/lib/assistido-access";
 import {
-  ATENDIMENTO_FRATERNO,
+  treatmentStateAction,
   treatmentStateLabel,
+  treatmentStateRank,
   type Assistido,
-  type TreatmentView,
 } from "@/lib/assistido";
 import { fullName, type VolunteerProfile } from "@/lib/volunteer";
 import {
@@ -16,47 +16,12 @@ import {
   type AtendimentoRow,
 } from "@/lib/atendimento";
 import { ArrowLeftIcon, HeartIcon } from "@/app/icons";
+import { TreatmentStateButton } from "./treatment-state-button";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
-}
-
-/**
- * Read once per request: the page and `generateMetadata` ask for the same
- * assistido, and each extra round trip is felt as a slower screen.
- */
-const loadAssistido = cache(async (id: string) => {
-  const supabase = await getSupabase();
-  const [, assistido, treatments] = await Promise.all([
-    requireDepartment(ATENDIMENTO_FRATERNO),
-    supabase
-      .from("cepzk_assistido")
-      .select(
-        "id, nome_completo, data_criacao, entrevistador:cepzk_voluntario (nome, sobrenome)",
-      )
-      .eq("id", id)
-      .maybeSingle<AssistidoRow>(),
-    supabase
-      .from("cepzk_tratamento")
-      .select(
-        `id, estado, obs, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))`,
-      )
-      .eq("assistido_id", id)
-      .returns<TreatmentRow[]>(),
-  ]);
-
-  return { assistido: assistido.data, treatmentRows: treatments.data };
-});
-
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const { assistido } = await loadAssistido(id);
-
-  return { title: assistido?.nome_completo ?? "Assistido" };
 }
 
 /** PostgREST returns embedded rows as an object or as a single-item array. */
@@ -76,40 +41,122 @@ interface TreatmentRow {
   id: number;
   estado: string;
   obs: string | null;
+  atendimento_id: number | null;
   atendimento: AtendimentoRow | AtendimentoRow[] | null;
   aca: { distonia: { nome: string } | null } | null;
   queixas: { queixa: { nome: string } | null }[] | null;
 }
 
+/** A treatment as this volunteer is allowed to read it. */
+interface VisibleTreatment {
+  id: number;
+  atendimentoId: number | null;
+  setor: string;
+  departamento: string | null;
+  horario: string;
+  precedencia: number | null;
+  estado: string;
+  /** `false` outside the volunteer's escala: only name and state. */
+  isDetailed: boolean;
+  obs: string | null;
+  distonia: string | null;
+  queixas: string[];
+  /** State change offered to the team that runs the treatment. */
+  nextState: string | null;
+  actionLabel: string | null;
+}
+
 const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
+
+/**
+ * Read once per request: the page and `generateMetadata` ask for the same
+ * assistido, and each extra round trip is felt as a slower screen.
+ */
+const loadAssistido = cache(async (id: string) => {
+  const access = await requireAssistidoAccess();
+  const { supabase } = access;
+
+  const [assistido, treatments] = await Promise.all([
+    supabase
+      .from("cepzk_assistido")
+      .select(
+        "id, nome_completo, data_criacao, entrevistador:cepzk_voluntario (nome, sobrenome)",
+      )
+      .eq("id", id)
+      .maybeSingle<AssistidoRow>(),
+    supabase
+      .from("cepzk_tratamento")
+      .select(
+        `id, estado, obs, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))`,
+      )
+      .eq("assistido_id", id)
+      .returns<TreatmentRow[]>(),
+  ]);
+
+  return { access, assistido: assistido.data, treatmentRows: treatments.data };
+});
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const { assistido } = await loadAssistido(id);
+
+  return { title: assistido?.nome_completo ?? "Assistido" };
+}
 
 export default async function AssistidoPage({ params }: PageProps) {
   const { id } = await params;
-  const { assistido, treatmentRows } = await loadAssistido(id);
+  const { access, assistido, treatmentRows } = await loadAssistido(id);
 
   if (!assistido) {
     notFound();
   }
 
-  const interviewer = one(assistido.entrevistador);
+  const rows = treatmentRows ?? [];
 
-  const treatments: TreatmentView[] = (treatmentRows ?? [])
+  // Fora do Atendimento Fraterno, o assistido só é visível quando tem um
+  // tratamento no atendimento da escala do voluntário.
+  if (
+    !access.isFull &&
+    !rows.some((row) => access.canSeeTreatment(row.atendimento_id))
+  ) {
+    redirect("/assistidos");
+  }
+
+  const treatments: VisibleTreatment[] = rows
     .map((row) => {
       const atendimentoRow = one(row.atendimento);
       const atendimento = atendimentoRow ? mapAtendimento(atendimentoRow) : null;
+      const setor = atendimento?.setor ?? "Setor";
+      const isDetailed = access.canSeeTreatment(row.atendimento_id);
+
+      const action =
+        isDetailed && access.canManageTreatment(row.atendimento_id)
+          ? treatmentStateAction(setor, row.estado)
+          : null;
+
       return {
         id: row.id,
-        setor: atendimento?.setor ?? "Setor",
+        atendimentoId: row.atendimento_id,
+        setor,
         departamento: atendimento?.departamento ?? null,
         horario: atendimento?.horario ?? "—",
         precedencia: atendimento?.precedencia ?? null,
         estado: row.estado,
-        obs: row.obs,
-        distonia: one(one(row.aca)?.distonia)?.nome ?? null,
-        queixas: (row.queixas ?? [])
-          .map((item) => one(item.queixa)?.nome)
-          .filter((nome): nome is string => Boolean(nome))
-          .sort((a, b) => a.localeCompare(b, "pt-BR")),
+        isDetailed,
+        obs: isDetailed ? row.obs : null,
+        distonia: isDetailed
+          ? (one(one(row.aca)?.distonia)?.nome ?? null)
+          : null,
+        queixas: isDetailed
+          ? (row.queixas ?? [])
+              .map((item) => one(item.queixa)?.nome)
+              .filter((nome): nome is string => Boolean(nome))
+              .sort((a, b) => a.localeCompare(b, "pt-BR"))
+          : [],
+        nextState: action?.nextState ?? null,
+        actionLabel: action?.label ?? null,
       };
     })
     // A precedência do atendimento manda: o mais prioritário primeiro.
@@ -118,9 +165,12 @@ export default async function AssistidoPage({ params }: PageProps) {
       (a, b) =>
         (a.precedencia ?? Number.MAX_SAFE_INTEGER) -
           (b.precedencia ?? Number.MAX_SAFE_INTEGER) ||
+        treatmentStateRank(a.estado) - treatmentStateRank(b.estado) ||
         a.setor.localeCompare(b.setor, "pt-BR") ||
         a.horario.localeCompare(b.horario, "pt-BR"),
     );
+
+  const interviewer = one(assistido.entrevistador);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
@@ -148,20 +198,24 @@ export default async function AssistidoPage({ params }: PageProps) {
               {assistido.nome_completo}
             </dd>
           </div>
-          <div>
-            <dt className="text-slate-500">Entrevistador</dt>
-            <dd className="mt-0.5 font-medium text-slate-900">
-              {interviewer ? fullName(interviewer) || "—" : "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Cadastrado em</dt>
-            <dd className="mt-0.5 font-medium text-slate-900">
-              {assistido.data_criacao
-                ? DATE_FORMAT.format(new Date(assistido.data_criacao))
-                : "—"}
-            </dd>
-          </div>
+          {access.isFull && (
+            <>
+              <div>
+                <dt className="text-slate-500">Entrevistador</dt>
+                <dd className="mt-0.5 font-medium text-slate-900">
+                  {interviewer ? fullName(interviewer) || "—" : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Cadastrado em</dt>
+                <dd className="mt-0.5 font-medium text-slate-900">
+                  {assistido.data_criacao
+                    ? DATE_FORMAT.format(new Date(assistido.data_criacao))
+                    : "—"}
+                </dd>
+              </div>
+            </>
+          )}
         </dl>
       </section>
 
@@ -189,11 +243,14 @@ export default async function AssistidoPage({ params }: PageProps) {
                     {treatmentStateLabel(treatment.estado)}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  {[treatment.departamento, treatment.horario]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
+
+                {treatment.isDetailed && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    {[treatment.departamento, treatment.horario]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
 
                 {treatment.distonia && (
                   <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
@@ -230,6 +287,14 @@ export default async function AssistidoPage({ params }: PageProps) {
                       {treatment.obs}
                     </p>
                   </div>
+                )}
+
+                {treatment.nextState && treatment.actionLabel && (
+                  <TreatmentStateButton
+                    treatmentId={treatment.id}
+                    nextState={treatment.nextState}
+                    label={treatment.actionLabel}
+                  />
                 )}
               </li>
             ))}

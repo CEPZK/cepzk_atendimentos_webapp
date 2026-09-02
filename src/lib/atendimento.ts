@@ -10,6 +10,7 @@
 /** A row of `cepzk_atendimento`, already joined with the catalogues. */
 export interface AtendimentoItem {
   id: number;
+  setorId: number | null;
   setor: string;
   departamento: string | null;
   horario: string;
@@ -49,6 +50,7 @@ export function mapAtendimento(row: AtendimentoRow): AtendimentoItem {
   const setor = one(row.setor);
   return {
     id: row.id,
+    setorId: setor?.id ?? null,
     setor: setor?.nome ?? "Setor",
     departamento: one(setor?.departamento)?.nome ?? null,
     horario: one(row.horario)?.nome ?? "—",

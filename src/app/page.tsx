@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import {
-  belongsToDepartment,
+  loadVolunteerAtendimentos,
   loadVolunteerSectors,
   requireVolunteer,
 } from "@/lib/current-volunteer";
 import { isAdmin, ROLE_LABELS } from "@/lib/volunteer";
-import { ATENDIMENTO_FRATERNO } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
 import { ClipboardUserIcon, UsersIcon } from "@/app/icons";
 
@@ -21,7 +20,10 @@ export default async function HomePage() {
 
   // Sectors the volunteer is scheduled for: the cards are released per
   // department, so the home screen needs them to decide what to show.
-  const sectors = await loadVolunteerSectors(supabase, volunteer.id);
+  const [sectors, atendimentos] = await Promise.all([
+    loadVolunteerSectors(supabase, volunteer.id),
+    loadVolunteerAtendimentos(supabase, volunteer.id),
+  ]);
 
   const cards = [
     {
@@ -40,9 +42,9 @@ export default async function HomePage() {
       description:
         "Consultar os assistidos e seus tratamentos, e cadastrar novos.",
       icon: <ClipboardUserIcon />,
-      isVisible:
-        isAdmin(volunteer) ||
-        belongsToDepartment(sectors, ATENDIMENTO_FRATERNO),
+      // O Atendimento Fraterno vê todos; os outros times veem os
+      // assistidos dos atendimentos da sua escala.
+      isVisible: isAdmin(volunteer) || atendimentos.length > 0,
     },
   ].filter((card) => card.isVisible);
 

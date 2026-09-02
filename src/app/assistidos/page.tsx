@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getSupabase, requireDepartment } from "@/lib/current-volunteer";
-import { ATENDIMENTO_FRATERNO, type Assistido } from "@/lib/assistido";
+import { requireAssistidoAccess } from "@/lib/assistido-access";
+import { buildAssistidoList, type Assistido } from "@/lib/assistido";
 import { ArrowLeftIcon } from "@/app/icons";
 import { AssistidosList } from "./assistidos-list";
 
@@ -11,24 +11,45 @@ export const metadata: Metadata = {
   title: "Assistidos",
 };
 
+interface TreatmentStateRow {
+  assistido_id: number;
+  estado: string;
+  assistido: { id: number; nome_completo: string } | null;
+}
+
 export default async function AssistidosPage() {
-  // A consulta sai junto com a checagem de acesso: são duas idas ao
-  // Supabase que não dependem uma da outra, e em série elas dobram o
-  // tempo até a tela aparecer. A guarda continua bloqueando a renderização.
-  const supabase = await getSupabase();
-  const [, { data, error }] = await Promise.all([
-    requireDepartment(ATENDIMENTO_FRATERNO),
-    supabase
-      .from("cepzk_assistido")
-      .select("id, nome_completo")
-      .order("nome_completo", { ascending: true })
-      .returns<Assistido[]>(),
+  const { supabase, isFull, atendimentoIds } = await requireAssistidoAccess();
+
+  // Quem é do Atendimento Fraterno (ou admin) vê todo mundo; os outros
+  // times veem apenas quem tem tratamento no atendimento da sua escala.
+  const treatmentsQuery = supabase
+    .from("cepzk_tratamento")
+    .select(
+      "assistido_id, estado, assistido:cepzk_assistido (id, nome_completo)",
+    );
+
+  const [everyone, treatments] = await Promise.all([
+    isFull
+      ? supabase
+          .from("cepzk_assistido")
+          .select("id, nome_completo")
+          .returns<Assistido[]>()
+      : Promise.resolve({ data: [] as Assistido[], error: null }),
+    (isFull
+      ? treatmentsQuery
+      : treatmentsQuery.in("atendimento_id", atendimentoIds)
+    ).returns<TreatmentStateRow[]>(),
   ]);
 
-  // Postgres orders by byte value, which puts "Ângela" after "Zulmira":
-  // sort with the Brazilian locale so the list reads alphabetically.
-  const assistidos = (data ?? []).sort((a, b) =>
-    a.nome_completo.localeCompare(b.nome_completo, "pt-BR"),
+  const error = everyone.error ?? treatments.error;
+
+  const assistidos = buildAssistidoList(
+    everyone.data ?? [],
+    (treatments.data ?? []).map((row) => ({
+      assistido_id: row.assistido_id,
+      estado: row.estado,
+      nome_completo: row.assistido?.nome_completo,
+    })),
   );
 
   return (
@@ -51,7 +72,7 @@ export default async function AssistidosPage() {
           ).
         </p>
       ) : (
-        <AssistidosList assistidos={assistidos} />
+        <AssistidosList assistidos={assistidos} canRegister={isFull} />
       )}
     </main>
   );

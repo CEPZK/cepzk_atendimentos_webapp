@@ -2,10 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requireDepartment } from "@/lib/current-volunteer";
+import { requireAssistidoAccess } from "@/lib/assistido-access";
 import {
   ACA_SECTOR,
   ATENDIMENTO_FRATERNO,
   findSimilarNames,
+  canonicalState,
+  treatmentStateAction,
   TEA_DISTONIA,
   type Assistido,
   type SimilarAssistido,
@@ -229,4 +232,87 @@ export async function createAssistido(
 
   revalidatePath("/assistidos");
   return { ok: true, id: created.id, message: "Assistido cadastrado." };
+}
+
+interface TreatmentStateRow {
+  id: number;
+  estado: string;
+  assistido_id: number;
+  atendimento_id: number | null;
+  atendimento: AtendimentoRow | AtendimentoRow[] | null;
+}
+
+/**
+ * Moves a treatment forward: the Desobsessão Infantil gives the alta and
+ * the Acolher com Amor starts the treatment that was waiting.
+ *
+ * The transition is decided here, from the sector and the current state,
+ * and not from what the screen sent — the button only says which change
+ * it wants.
+ */
+export async function updateTreatmentState(
+  treatmentId: number,
+  nextState: string,
+): Promise<ActionResult> {
+  const access = await requireAssistidoAccess();
+  const { supabase } = access;
+
+  const { data: treatment, error } = await supabase
+    .from("cepzk_tratamento")
+    .select(
+      `id, estado, assistido_id, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT})`,
+    )
+    .eq("id", treatmentId)
+    .maybeSingle<TreatmentStateRow>();
+
+  if (error || !treatment) {
+    return {
+      ok: false,
+      message: error
+        ? `Não foi possível ler o tratamento (${error.code}: ${error.message}).`
+        : "Tratamento não encontrado.",
+    };
+  }
+
+  if (!access.canManageTreatment(treatment.atendimento_id)) {
+    return {
+      ok: false,
+      message: "Este tratamento é de outro atendimento.",
+    };
+  }
+
+  const embedded = Array.isArray(treatment.atendimento)
+    ? treatment.atendimento[0]
+    : treatment.atendimento;
+  const setor = embedded ? mapAtendimento(embedded).setor : "";
+
+  // A transição vem da mesma regra que desenha o botão.
+  const allowed = treatmentStateAction(setor, treatment.estado);
+
+  if (!allowed || canonicalState(allowed.nextState) !== canonicalState(nextState)) {
+    return {
+      ok: false,
+      message: `Esta mudança não é possível para o tratamento (situação atual: ${treatment.estado}).`,
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("cepzk_tratamento")
+    .update({
+      estado: allowed.nextState,
+      // A coluna existe desde a migration 006 e é a aplicação que mantém.
+      data_atualizacao: new Date().toISOString(),
+    })
+    .eq("id", treatmentId);
+
+  if (updateError) {
+    return {
+      ok: false,
+      message: `Não foi possível atualizar (${updateError.code}: ${updateError.message}).`,
+    };
+  }
+
+  revalidatePath("/assistidos");
+  revalidatePath(`/assistidos/${treatment.assistido_id}`);
+  return { ok: true, message: `Situação alterada para ${allowed.nextState}.` };
 }

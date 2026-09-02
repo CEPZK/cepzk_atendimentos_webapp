@@ -5,11 +5,19 @@ import { useMemo, useState } from "react";
 import {
   assistidoInitials,
   normalizeName,
-  type Assistido,
+  treatmentStateLabel,
+  type AssistidoListItem,
 } from "@/lib/assistido";
 import { ChevronRightIcon, PlusIcon, SearchIcon } from "@/app/icons";
 
-export function AssistidosList({ assistidos }: { assistidos: Assistido[] }) {
+export function AssistidosList({
+  assistidos,
+  canRegister,
+}: {
+  assistidos: AssistidoListItem[];
+  /** Registering is done by the Atendimento Fraterno, who interviews. */
+  canRegister: boolean;
+}) {
   const [query, setQuery] = useState("");
 
   const results = useMemo(() => {
@@ -36,13 +44,15 @@ export function AssistidosList({ assistidos }: { assistidos: Assistido[] }) {
         />
       </div>
 
-      <Link
-        href="/assistidos/novo"
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
-      >
-        <PlusIcon className="h-5 w-5" />
-        Cadastrar assistido
-      </Link>
+      {canRegister && (
+        <Link
+          href="/assistidos/novo"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+        >
+          <PlusIcon className="h-5 w-5" />
+          Cadastrar assistido
+        </Link>
+      )}
 
       <p className="mt-4 text-xs text-slate-500">
         {results.length} de {assistidos.length}{" "}
@@ -59,8 +69,15 @@ export function AssistidosList({ assistidos }: { assistidos: Assistido[] }) {
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-700">
                 {assistidoInitials(assistido.nome_completo)}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
-                {assistido.nome_completo}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-slate-900">
+                  {assistido.nome_completo}
+                </span>
+                {assistido.estado && (
+                  <span className="block truncate text-xs text-slate-500">
+                    {treatmentStateLabel(assistido.estado)}
+                  </span>
+                )}
               </span>
               <ChevronRightIcon className="h-5 w-5 shrink-0 text-slate-300" />
             </Link>

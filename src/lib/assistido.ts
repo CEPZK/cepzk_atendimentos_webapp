@@ -7,6 +7,12 @@
 /** Sector whose treatments carry the Acolher com Amor extra data. */
 export const ACA_SECTOR = "Acolher com Amor";
 
+/**
+ * Sectors of the Desobsessão Infantil (I and II): the treatment ends with
+ * an "alta" given by the team itself.
+ */
+export const DESOBSESSAO_INFANTIL_SECTOR = "Desobsessão Infantil";
+
 /** Distonia that asks for the list of main complaints. */
 export const TEA_DISTONIA = "TEA";
 
@@ -20,6 +26,14 @@ export interface Assistido {
   id: number;
   nome_completo: string;
   data_criacao?: string;
+}
+
+/**
+ * A row of the assistidos list: the name plus the state that decides
+ * where it sits in the list (the most pending of their treatments).
+ */
+export interface AssistidoListItem extends Assistido {
+  estado: string | null;
 }
 
 /** A catalogue row (sectors, schedules, distonias, complaints). */
@@ -52,9 +66,146 @@ export interface TreatmentInput {
   obs: string;
 }
 
+// -----------------------------------------------------------------------------
+// Treatment state
+//
+// `cepzk_tratamento.estado` is free text; these are the values the
+// platform writes and the order they are read in — who is waiting comes
+// first, who was discharged goes last.
+// -----------------------------------------------------------------------------
+
+export const ESTADO_PENDENTE = "pendente";
+export const ESTADO_EM_TRATAMENTO = "em tratamento";
+export const ESTADO_ALTA = "alta";
+
+export const TREATMENT_STATE_ORDER = [
+  ESTADO_PENDENTE,
+  ESTADO_EM_TRATAMENTO,
+  ESTADO_ALTA,
+] as const;
+
+/** Accent/case insensitive, so "Alta" and "alta" are the same state. */
+function normalizeState(estado: string): string {
+  return estado
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+/** `completo` is what the first version of the schema wrote for "alta". */
+const STATE_ALIASES: Record<string, string> = {
+  completo: ESTADO_ALTA,
+  concluido: ESTADO_ALTA,
+  "em atendimento": ESTADO_EM_TRATAMENTO,
+};
+
+export function canonicalState(estado: string): string {
+  const normalized = normalizeState(estado);
+  return STATE_ALIASES[normalized] ?? normalized;
+}
+
+export function isState(estado: string, expected: string): boolean {
+  return canonicalState(estado) === canonicalState(expected);
+}
+
+/**
+ * Sort key: pendente, em tratamento, alta — unknown states go just
+ * before the discharged ones, so nobody disappears at the bottom.
+ */
+export function treatmentStateRank(estado: string | null | undefined): number {
+  if (!estado) return TREATMENT_STATE_ORDER.length;
+  const position = TREATMENT_STATE_ORDER.indexOf(
+    canonicalState(estado) as (typeof TREATMENT_STATE_ORDER)[number],
+  );
+  return position === -1 ? TREATMENT_STATE_ORDER.length - 0.5 : position;
+}
+
 /** "Situação: pendente" — the state as recorded in `cepzk_tratamento`. */
 export function treatmentStateLabel(estado: string): string {
   return `Situação: ${estado}`;
+}
+
+/**
+ * The state change offered to the team that runs the treatment:
+ *
+ * - Desobsessão Infantil discharges the child ("Dar Alta"), from any
+ *   state that is not already an alta;
+ * - Acolher com Amor starts a treatment that is still waiting.
+ *
+ * Used both by the screen (to draw the button) and by the Server Action
+ * (to decide whether the write is allowed), so the two cannot drift.
+ */
+export function treatmentStateAction(
+  setor: string,
+  estado: string,
+): { nextState: string; label: string } | null {
+  if (isDesobsessaoInfantil(setor) && !isState(estado, ESTADO_ALTA)) {
+    return { nextState: ESTADO_ALTA, label: "Dar Alta" };
+  }
+  if (isAcolherComAmor(setor) && isState(estado, ESTADO_PENDENTE)) {
+    return { nextState: ESTADO_EM_TRATAMENTO, label: "Iniciar Tratamento" };
+  }
+  return null;
+}
+
+/**
+ * The assistidos list: one row per person, carrying the most pending
+ * state among the treatments this volunteer may see, ordered by state
+ * (pendente, em tratamento, alta) and then alphabetically.
+ *
+ * `assistidos` is empty for who only sees their own atendimentos — the
+ * names then come from the treatments themselves.
+ */
+export function buildAssistidoList(
+  assistidos: Assistido[],
+  treatments: {
+    assistido_id: number;
+    estado: string;
+    nome_completo?: string | null;
+  }[],
+): AssistidoListItem[] {
+  const byId = new Map<number, AssistidoListItem>();
+
+  for (const assistido of assistidos) {
+    byId.set(assistido.id, { ...assistido, estado: null });
+  }
+
+  for (const row of treatments) {
+    const current = byId.get(row.assistido_id) ?? {
+      id: row.assistido_id,
+      nome_completo: row.nome_completo ?? "—",
+      estado: null,
+    };
+
+    const isMorePending =
+      current.estado === null ||
+      treatmentStateRank(row.estado) < treatmentStateRank(current.estado);
+
+    byId.set(row.assistido_id, {
+      ...current,
+      estado: isMorePending ? row.estado : current.estado,
+    });
+  }
+
+  // O Postgres ordena por byte, que joga "Ângela" para depois de
+  // "Zulmira": a ordem alfabética é feita aqui, em pt-BR.
+  return [...byId.values()].sort(
+    (a, b) =>
+      treatmentStateRank(a.estado) - treatmentStateRank(b.estado) ||
+      a.nome_completo.localeCompare(b.nome_completo, "pt-BR"),
+  );
+}
+
+/** Desobsessão Infantil I and II. */
+export function isDesobsessaoInfantil(setor: string): boolean {
+  return normalizeState(setor).startsWith(
+    normalizeState(DESOBSESSAO_INFANTIL_SECTOR),
+  );
+}
+
+export function isAcolherComAmor(setor: string): boolean {
+  return normalizeState(setor) === normalizeState(ACA_SECTOR);
 }
 
 // -----------------------------------------------------------------------------
