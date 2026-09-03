@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { requireAssistidoAccess } from "@/lib/assistido-access";
 import {
   ATENDIMENTO_SELECT,
@@ -39,16 +38,14 @@ export default async function AssistidosPage() {
   const nonDIAtendimentos = access.atendimentos.filter(
     (at) => !isDesobsessaoInfantil(at.setor),
   );
-
-  // Os voluntários exclusivamente da Desobsessão Infantil I/II não usam
-  // a lista geral de assistidos — eles têm seu próprio card na página
-  // inicial. Se não houver atendimentos fora da Desobsessão Infantil,
-  // voltam para o início.
-  if (!isFull && nonDIAtendimentos.length === 0) {
-    redirect("/");
-  }
-
   const visibleAtendimentoIds = nonDIAtendimentos.map((at) => at.id);
+
+  // Para voluntários exclusivamente da Desobsessão Infantil, sem nenhum
+  // outro atendimento, a lista geral fica vazia (os cards próprios na
+  // página inicial são a entrada correta). Não redirecionamos, pois o
+  // acesso ao detalhe do assistido precisa funcionar quando eles voltam
+  // pela seta do navegador.
+  const hasAnyVisible = isFull || visibleAtendimentoIds.length > 0;
 
   // Quem é do Atendimento Fraterno (ou admin) vê todo mundo; os outros
   // times veem apenas quem tem tratamento no atendimento da sua escala,
@@ -66,10 +63,12 @@ export default async function AssistidosPage() {
           .select("id, nome_completo")
           .returns<Assistido[]>()
       : Promise.resolve({ data: [] as Assistido[], error: null }),
-    (isFull
-      ? treatmentsQuery
-      : treatmentsQuery.in("atendimento_id", visibleAtendimentoIds)
-    ).returns<TreatmentStateRow[]>(),
+    !hasAnyVisible
+      ? Promise.resolve({ data: [] as TreatmentStateRow[], error: null })
+      : (isFull
+          ? treatmentsQuery
+          : treatmentsQuery.in("atendimento_id", visibleAtendimentoIds)
+        ).returns<TreatmentStateRow[]>(),
   ]);
 
   const error = everyone.error ?? treatments.error;
