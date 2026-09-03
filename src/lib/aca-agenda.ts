@@ -318,3 +318,101 @@ export function monthGrid(year: number, month: number): MonthGrid {
 
   return { year, month, label: MONTH_LABEL.format(first), weeks };
 }
+
+// -----------------------------------------------------------------------------
+// Colour per assistido
+//
+// The same person keeps the same colour across every day and month, so a
+// volunteer recognises who is booked without reading the names one by
+// one. The colour comes from the name itself (a hash), not from a
+// counter: it does not change when someone else is scheduled first.
+// -----------------------------------------------------------------------------
+
+export interface NameColor {
+  /** Tailwind classes of the chip (background, text and border). */
+  chip: string;
+  /** Tailwind classes of the small dot used next to the name. */
+  dot: string;
+}
+
+/** Colours that stay legible side by side, teal excluded (it is the UI's). */
+const NAME_COLORS: NameColor[] = [
+  { chip: "bg-rose-100 text-rose-800 ring-rose-200", dot: "bg-rose-500" },
+  { chip: "bg-amber-100 text-amber-900 ring-amber-200", dot: "bg-amber-500" },
+  { chip: "bg-lime-100 text-lime-900 ring-lime-200", dot: "bg-lime-600" },
+  {
+    chip: "bg-emerald-100 text-emerald-900 ring-emerald-200",
+    dot: "bg-emerald-600",
+  },
+  { chip: "bg-sky-100 text-sky-900 ring-sky-200", dot: "bg-sky-600" },
+  { chip: "bg-indigo-100 text-indigo-900 ring-indigo-200", dot: "bg-indigo-500" },
+  { chip: "bg-violet-100 text-violet-900 ring-violet-200", dot: "bg-violet-500" },
+  { chip: "bg-fuchsia-100 text-fuchsia-900 ring-fuchsia-200", dot: "bg-fuchsia-500" },
+  { chip: "bg-orange-100 text-orange-900 ring-orange-200", dot: "bg-orange-500" },
+  { chip: "bg-cyan-100 text-cyan-900 ring-cyan-200", dot: "bg-cyan-600" },
+  { chip: "bg-pink-100 text-pink-900 ring-pink-200", dot: "bg-pink-500" },
+  { chip: "bg-blue-100 text-blue-900 ring-blue-200", dot: "bg-blue-600" },
+];
+
+/** Deterministic starting point of a name in the palette. */
+function nameHash(nome: string): number {
+  let hash = 2166136261;
+  const normalized = normalize(nome);
+  for (let i = 0; i < normalized.length; i++) {
+    hash ^= normalized.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash);
+}
+
+/**
+ * A colour for each name of the agenda, all of them different while the
+ * palette holds.
+ *
+ * The colour starts from the name's own hash — so the same person tends
+ * to keep it — but a name that lands on a colour already taken walks to
+ * the next free one. The names are sorted first, so the result depends
+ * only on *which* people are in the agenda, never on the order the
+ * sessions were read in: the same assistido keeps the same colour on
+ * every day and every month of the screen.
+ */
+export function buildNameColors(names: string[]): Map<string, NameColor> {
+  const unique = [...new Set(names)].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const colors = new Map<string, NameColor>();
+  const taken = new Set<number>();
+
+  for (const name of unique) {
+    const start = nameHash(name) % NAME_COLORS.length;
+    let index = start;
+
+    // Mais nomes do que cores: a partir daí a repetição é inevitável e o
+    // desempate volta a ser o próprio hash.
+    if (taken.size < NAME_COLORS.length) {
+      let step = 0;
+      while (taken.has(index) && step < NAME_COLORS.length) {
+        index = (index + 1) % NAME_COLORS.length;
+        step++;
+      }
+    }
+
+    taken.add(index);
+    colors.set(name, NAME_COLORS[index]);
+  }
+
+  return colors;
+}
+
+/** Fallback colour, for a name outside the agenda's palette. */
+export function nameColor(nome: string): NameColor {
+  return NAME_COLORS[nameHash(nome) % NAME_COLORS.length];
+}
+
+/** "Maria Aparecida da Silva" → "Maria A." — fits the calendar cell. */
+export function shortName(nome: string): string {
+  const parts = nome.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return nome;
+  if (parts.length === 1) return parts[0];
+
+  const surname = parts[parts.length - 1];
+  return `${parts[0]} ${surname[0].toUpperCase()}.`;
+}

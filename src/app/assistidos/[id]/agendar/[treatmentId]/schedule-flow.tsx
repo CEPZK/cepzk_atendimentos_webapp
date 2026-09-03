@@ -3,10 +3,14 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { CatalogItem } from "@/lib/assistido";
+import type { NameColor } from "@/lib/aca-agenda";
 import {
   SESSION_COUNT,
   WEEKDAY_INITIALS,
+  buildNameColors,
   dayKey,
+  nameColor,
+  shortName,
   formatLongDate,
   formatShortDate,
   formatTime,
@@ -346,6 +350,13 @@ function MonthCalendar({
     [days],
   );
 
+  // Uma cor por assistido, válida em toda a agenda: o mesmo nome tem a
+  // mesma cor em qualquer dia e em qualquer mês da tela.
+  const colors = useMemo(
+    () => buildNameColors(days.flatMap((day) => day.assistidos)),
+    [days],
+  );
+
   const first = days[0] ? monthOf(dayKey(days[0].iso)) : null;
   const last = days[days.length - 1]
     ? monthOf(dayKey(days[days.length - 1].iso))
@@ -357,6 +368,26 @@ function MonthCalendar({
   const [open, setOpen] = useState<string | null>(null);
 
   const grid = useMemo(() => monthGrid(cursor.year, cursor.month), [cursor]);
+
+  // Os dias da semana em que a casa atende. As outras colunas existem só
+  // para situar a data, então ficam estreitas e devolvem a largura para
+  // a coluna que interessa — com um único sábado, ele fica ~4x maior.
+  const activeWeekdays = useMemo(() => {
+    const weekdays = new Set<number>();
+    for (const day of days) {
+      const [year, month, date] = dayKey(day.iso).split("-").map(Number);
+      weekdays.add(new Date(Date.UTC(year, month - 1, date)).getUTCDay());
+    }
+    return weekdays;
+  }, [days]);
+
+  const columns = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, weekday) =>
+        activeWeekdays.has(weekday) ? "minmax(0,4fr)" : "minmax(0,1fr)",
+      ).join(" "),
+    [activeWeekdays],
+  );
   const index = cursor.year * 12 + cursor.month;
   const canGoBack = first ? index > first.year * 12 + first.month : false;
   const canGoForward = last ? index < last.year * 12 + last.month : false;
@@ -403,18 +434,23 @@ function MonthCalendar({
           </button>
         </div>
 
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+        <div
+          className="grid border-b border-slate-200 bg-slate-50"
+          style={{ gridTemplateColumns: columns }}
+        >
           {WEEKDAY_INITIALS.map((initial, position) => (
             <div
               key={position}
-              className="px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+              className={`px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide ${
+                activeWeekdays.has(position) ? "text-slate-700" : "text-slate-400"
+              }`}
             >
               {initial}
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
+        <div className="grid" style={{ gridTemplateColumns: columns }}>
           {grid.weeks.flat().map((cell) => {
             const day = byDay.get(cell.key);
             // Um dia de atendimento é escolhível mesmo quando pertence ao
@@ -454,13 +490,23 @@ function MonthCalendar({
                       {formatTime(day!.iso)}
                     </span>
                     {day!.assistidos.length > 0 && (
-                      <span
-                        className={`mt-auto w-full truncate rounded px-1 py-0.5 text-[10px] font-medium text-white ${
-                          cell.inMonth ? "bg-teal-700" : "bg-teal-700/60"
-                        }`}
-                      >
-                        {day!.assistidos.length} agendado
-                        {day!.assistidos.length > 1 ? "s" : ""}
+                      <span className="mt-1 flex w-full flex-col gap-0.5">
+                        {day!.assistidos.slice(0, 4).map((nome) => (
+                          <span
+                            key={nome}
+                            title={nome}
+                            className={`truncate rounded px-1 py-0.5 text-[10px] font-medium ring-1 ring-inset ${
+                              (colors.get(nome) ?? nameColor(nome)).chip
+                            } ${cell.inMonth ? "" : "opacity-60"}`}
+                          >
+                            {shortName(nome)}
+                          </span>
+                        ))}
+                        {day!.assistidos.length > 4 && (
+                          <span className="px-1 text-[10px] font-medium text-slate-500">
+                            +{day!.assistidos.length - 4}
+                          </span>
+                        )}
                       </span>
                     )}
                   </button>
@@ -484,6 +530,7 @@ function MonthCalendar({
       {openDay && (
         <DayDialog
           day={openDay}
+          colors={colors}
           onCancel={() => setOpen(null)}
           onChoose={() => onChoose(openDay.iso)}
         />
@@ -495,10 +542,12 @@ function MonthCalendar({
 /** The day of the atendimento: who is booked on it, and the choice. */
 function DayDialog({
   day,
+  colors,
   onCancel,
   onChoose,
 }: {
   day: CalendarDay;
+  colors: Map<string, NameColor>;
   onCancel: () => void;
   onChoose: () => void;
 }) {
@@ -530,8 +579,14 @@ function DayDialog({
             {day.assistidos.map((nome) => (
               <li
                 key={nome}
-                className="rounded-lg bg-slate-50 px-3 py-1.5 text-sm text-slate-700"
+                className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-sm text-slate-700"
               >
+                <span
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                    (colors.get(nome) ?? nameColor(nome)).dot
+                  }`}
+                  aria-hidden="true"
+                />
                 {nome}
               </li>
             ))}
