@@ -55,7 +55,7 @@ export default async function DesobsessaoInfantilIPage() {
   const { data, error } = await supabase
     .from("cepzk_tratamento")
     .select(
-      `id, estado, data_atualizacao, data_arquivamento, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), assistido:cepzk_assistido (nome_completo, data_arquivamento)`,
+      `id, assistido_id, estado, data_atualizacao, data_arquivamento, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), assistido:cepzk_assistido (nome_completo, data_arquivamento)`,
     )
     .returns<TreatmentRow[]>();
 
