@@ -414,7 +414,11 @@ function MonthCalendar({
         <div className="grid grid-cols-7">
           {grid.weeks.flat().map((cell) => {
             const day = byDay.get(cell.key);
-            const available = Boolean(day) && cell.inMonth;
+            // Um dia de atendimento é escolhível mesmo quando pertence ao
+            // mês vizinho: a grade de setembro já mostra os primeiros
+            // sábados de outubro, e obrigar a virar o mês para clicar
+            // neles é atrito puro.
+            const available = Boolean(day);
 
             return (
               <div
@@ -425,16 +429,33 @@ function MonthCalendar({
                   <button
                     type="button"
                     onClick={() => setOpen(cell.key)}
-                    className="flex h-full w-full flex-col items-start gap-1 rounded-lg bg-teal-50/70 p-1.5 text-left ring-1 ring-inset ring-teal-100 transition-colors hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-600"
+                    className={`flex h-full w-full flex-col items-start gap-1 rounded-lg p-1.5 text-left ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 ${
+                      cell.inMonth
+                        ? "bg-teal-50/70 ring-teal-100 hover:bg-teal-100"
+                        : // Fora do mês: mesma célula, apenas mais discreta.
+                          "bg-teal-50/30 ring-teal-50 hover:bg-teal-100/70"
+                    }`}
                   >
-                    <span className="text-sm font-semibold text-teal-800">
+                    <span
+                      className={`text-sm font-semibold ${
+                        cell.inMonth ? "text-teal-800" : "text-teal-700/60"
+                      }`}
+                    >
                       {cell.day}
                     </span>
-                    <span className="text-[10px] font-medium text-teal-700">
+                    <span
+                      className={`text-[10px] font-medium ${
+                        cell.inMonth ? "text-teal-700" : "text-teal-700/60"
+                      }`}
+                    >
                       {formatTime(day!.iso)}
                     </span>
                     {day!.assistidos.length > 0 && (
-                      <span className="mt-auto w-full truncate rounded bg-teal-700 px-1 py-0.5 text-[10px] font-medium text-white">
+                      <span
+                        className={`mt-auto w-full truncate rounded px-1 py-0.5 text-[10px] font-medium text-white ${
+                          cell.inMonth ? "bg-teal-700" : "bg-teal-700/60"
+                        }`}
+                      >
                         {day!.assistidos.length} agendado
                         {day!.assistidos.length > 1 ? "s" : ""}
                       </span>
