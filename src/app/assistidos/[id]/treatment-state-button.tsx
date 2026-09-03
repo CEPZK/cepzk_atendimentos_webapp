@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateTreatmentState } from "../actions";
+
+const BUTTON_CLASS =
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 /**
  * "Dar Alta" / "Iniciar Tratamento".
@@ -14,10 +18,13 @@ export function TreatmentStateButton({
   treatmentId,
   nextState,
   label,
+  href,
 }: {
   treatmentId: number;
   nextState: string;
   label: string;
+  /** When the change needs a screen of its own (the ACA agenda). */
+  href?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -35,13 +42,23 @@ export function TreatmentStateButton({
     });
   }
 
+  if (href) {
+    return (
+      <div className="mt-4">
+        <Link href={href} className={BUTTON_CLASS}>
+          {label}
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4">
       <button
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        className={BUTTON_CLASS}
       >
         {isPending ? "Salvando..." : label}
       </button>

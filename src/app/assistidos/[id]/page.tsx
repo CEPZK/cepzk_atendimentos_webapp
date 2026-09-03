@@ -4,6 +4,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireAssistidoAccess } from "@/lib/assistido-access";
 import {
+  ESTADO_EM_TRATAMENTO,
+  isAcolherComAmor,
   treatmentStateAction,
   treatmentStateLabel,
   treatmentStateRank,
@@ -64,6 +66,8 @@ interface VisibleTreatment {
   /** State change offered to the team that runs the treatment. */
   nextState: string | null;
   actionLabel: string | null;
+  /** The ACA starts the treatment on the agenda screen, not in place. */
+  actionHref: string | null;
 }
 
 const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
@@ -157,6 +161,12 @@ export default async function AssistidoPage({ params }: PageProps) {
           : [],
         nextState: action?.nextState ?? null,
         actionLabel: action?.label ?? null,
+        // Iniciar o tratamento do Acolher com Amor é agendar as sessões:
+        // o botão leva à agenda em vez de mudar a situação na hora.
+        actionHref:
+          action?.nextState === ESTADO_EM_TRATAMENTO && isAcolherComAmor(setor)
+            ? `/assistidos/${id}/agendar/${row.id}`
+            : null,
       };
     })
     // A precedência do atendimento manda: o mais prioritário primeiro.
@@ -294,6 +304,7 @@ export default async function AssistidoPage({ params }: PageProps) {
                     treatmentId={treatment.id}
                     nextState={treatment.nextState}
                     label={treatment.actionLabel}
+                    href={treatment.actionHref ?? undefined}
                   />
                 )}
               </li>
