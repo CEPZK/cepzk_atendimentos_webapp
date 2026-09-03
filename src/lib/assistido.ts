@@ -12,6 +12,8 @@ export const ACA_SECTOR = "Acolher com Amor";
  * an "alta" given by the team itself.
  */
 export const DESOBSESSAO_INFANTIL_SECTOR = "Desobsessão Infantil";
+export const DESOBSESSAO_INFANTIL_I_SECTOR = "Desobsessão Infantil I";
+export const DESOBSESSAO_INFANTIL_II_SECTOR = "Desobsessão Infantil II";
 
 /** Distonia that asks for the list of main complaints. */
 export const TEA_DISTONIA = "TEA";
@@ -77,12 +79,22 @@ export interface TreatmentInput {
 export const ESTADO_PENDENTE = "pendente";
 export const ESTADO_EM_TRATAMENTO = "em tratamento";
 export const ESTADO_ALTA = "alta";
+export const ESTADO_EXPIRADO = "expirado";
 
 export const TREATMENT_STATE_ORDER = [
   ESTADO_PENDENTE,
   ESTADO_EM_TRATAMENTO,
   ESTADO_ALTA,
+  ESTADO_EXPIRADO,
 ] as const;
+
+/** Tailwind classes used on the Desobsessão Infantil status chips. */
+export const TREATMENT_STATE_COLORS: Record<string, string> = {
+  [ESTADO_PENDENTE]: "bg-amber-100 text-amber-800",
+  [ESTADO_EM_TRATAMENTO]: "bg-blue-100 text-blue-800",
+  [ESTADO_ALTA]: "bg-emerald-100 text-emerald-800",
+  [ESTADO_EXPIRADO]: "bg-red-100 text-red-800",
+};
 
 /** Accent/case insensitive, so "Alta" and "alta" are the same state. */
 function normalizeState(estado: string): string {
@@ -123,6 +135,24 @@ export function treatmentStateRank(estado: string | null | undefined): number {
 /** "Situação: pendente" — the state as recorded in `cepzk_tratamento`. */
 export function treatmentStateLabel(estado: string): string {
   return `Situação: ${estado}`;
+}
+
+/**
+ * The state as displayed on a chip — capitalized first letter, e.g.
+ * "pendente" → "Pendente", "em tratamento" → "Em tratamento".
+ */
+export function treatmentStateChip(estado: string): string {
+  if (!estado) return estado;
+  return estado.charAt(0).toUpperCase() + estado.slice(1);
+}
+
+/** Tailwind classes for the colored state chip. Falls back to slate. */
+export function treatmentStateColorClass(estado: string | null | undefined): string {
+  if (!estado) return "bg-slate-100 text-slate-700";
+  return (
+    TREATMENT_STATE_COLORS[canonicalState(estado)] ??
+    "bg-slate-100 text-slate-700"
+  );
 }
 
 /**
@@ -281,13 +311,107 @@ export function buildAcaWaitlist(
 
 /** Desobsessão Infantil I and II. */
 export function isDesobsessaoInfantil(setor: string): boolean {
-  return normalizeState(setor).startsWith(
-    normalizeState(DESOBSESSAO_INFANTIL_SECTOR),
+  return isDesobsessaoInfantilI(setor) || isDesobsessaoInfantilII(setor);
+}
+
+export function isDesobsessaoInfantilI(setor: string): boolean {
+  // "Desobsessão Infantil I" matches exactly; "Desobsessão Infantil" (no
+  // suffix) counts as I for backward compatibility with existing rows.
+  const normalized = normalizeState(setor);
+  return (
+    normalized === normalizeState(DESOBSESSAO_INFANTIL_I_SECTOR) ||
+    normalized === normalizeState(DESOBSESSAO_INFANTIL_SECTOR)
   );
 }
 
+export function isDesobsessaoInfantilII(setor: string): boolean {
+  return normalizeState(setor) === normalizeState(DESOBSESSAO_INFANTIL_II_SECTOR);
+}
+
+/** Whether a treatment belongs to a specific sector (case/diacritic-insensitive). */
+export function isSector(setor: string, expected: string): boolean {
+  return normalizeState(setor) === normalizeState(expected);
+}
+
 export function isAcolherComAmor(setor: string): boolean {
-  return normalizeState(setor) === normalizeState(ACA_SECTOR);
+  return isSector(setor, ACA_SECTOR);
+}
+
+/**
+ * An entry in the Desobsessão Infantil assistidos list: the assistido plus
+ * the state of the most recent (by `data_atualizacao`) non-archived
+ * treatment of the team's sector.
+ */
+export interface DesobsessaoInfantilListItem extends Assistido {
+  estado: string | null;
+  /** The relevant (most recent, non-archived) treatment id. */
+  treatmentId: number | null;
+}
+
+interface TreatmentRowForDI {
+  id: number;
+  assistido_id: number;
+  estado: string;
+  data_atualizacao: string | null;
+  data_arquivamento: string | null;
+  setor: string;
+  nome_completo?: string | null;
+  assistido_data_arquivamento?: string | null;
+}
+
+/**
+ * Build the active list for a Desobsessão Infantil team: the assistidos
+ * who are not archived and have at least one non-archived treatment that
+ * matches `sectorMatcher`. Sorted alphabetically by name. The row's
+ * estado is the **most recent** treatment's estado.
+ *
+ * The matcher is a predicate (rather than a plain sector name) so that
+ * the caller can include legacy rows such as "Desobsessão Infantil"
+ * (without the "I" suffix) in the Desobsessão Infantil I view.
+ */
+export function buildDesobsessaoInfantilList(
+  rows: TreatmentRowForDI[],
+  sectorMatcher: string | ((setor: string) => boolean),
+): DesobsessaoInfantilListItem[] {
+  const matches =
+    typeof sectorMatcher === "function"
+      ? sectorMatcher
+      : (setor: string) => isSector(setor, sectorMatcher);
+
+  const bestById = new Map<number, {
+    item: DesobsessaoInfantilListItem;
+    updatedAt: number;
+  }>();
+
+  for (const row of rows) {
+    // Arquivados (assistido ou tratamento) não entram nesta lista.
+    if (row.data_arquivamento) continue;
+    if (row.assistido_data_arquivamento) continue;
+    if (!matches(row.setor)) continue;
+
+    const updatedAt = row.data_atualizacao
+      ? new Date(row.data_atualizacao).getTime()
+      : 0;
+    const existing = bestById.get(row.assistido_id);
+
+    if (!existing || updatedAt > existing.updatedAt) {
+      bestById.set(row.assistido_id, {
+        item: {
+          id: row.assistido_id,
+          nome_completo: row.nome_completo ?? "—",
+          estado: row.estado,
+          treatmentId: row.id,
+        },
+        updatedAt,
+      });
+    }
+  }
+
+  return [...bestById.values()]
+    .map(({ item }) => item)
+    .sort((a, b) =>
+      a.nome_completo.localeCompare(b.nome_completo, "pt-BR"),
+    );
 }
 
 // -----------------------------------------------------------------------------

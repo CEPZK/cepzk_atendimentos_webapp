@@ -325,6 +325,9 @@ export async function updateTreatmentState(
   revalidatePath(`/assistidos/${treatment.assistido_id}`);
   // Quem sai de "pendente" sai da fila do Acolher com Amor.
   revalidatePath("/acolher-com-amor/lista-de-espera");
+  // As listas da Desobsessão Infantil também dependem do estado.
+  revalidatePath("/desobsessao-infantil-i");
+  revalidatePath("/desobsessao-infantil-ii");
   return { ok: true, message: `Situação alterada para ${allowed.nextState}.` };
 }
 
@@ -532,6 +535,9 @@ export async function scheduleAcaTreatment(
   revalidatePath("/acolher-com-amor/lista-de-espera");
   // As novas sessões entram no calendário do Acolher com Amor.
   revalidatePath("/acolher-com-amor/calendario");
+  // As listas da Desobsessão Infantil também dependem do estado.
+  revalidatePath("/desobsessao-infantil-i");
+  revalidatePath("/desobsessao-infantil-ii");
   return {
     ok: true,
     message: `Tratamento agendado em ${SESSION_COUNT} sessões.`,

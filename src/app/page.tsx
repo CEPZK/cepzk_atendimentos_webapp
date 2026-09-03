@@ -6,10 +6,16 @@ import {
   requireVolunteer,
 } from "@/lib/current-volunteer";
 import { isAdmin, ROLE_LABELS } from "@/lib/volunteer";
-import { ACA_SECTOR } from "@/lib/assistido";
+import {
+  ACA_SECTOR,
+  DESOBSESSAO_INFANTIL_I_SECTOR,
+  DESOBSESSAO_INFANTIL_II_SECTOR,
+  isDesobsessaoInfantil,
+} from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
 import {
   CalendarIcon,
+  ChildIcon,
   ClipboardUserIcon,
   ClockIcon,
   UsersIcon,
@@ -32,6 +38,12 @@ export default async function HomePage() {
     loadVolunteerAtendimentos(supabase, volunteer.id),
   ]);
 
+  // Os atendimentos da Desobsessão Infantil não aparecem na lista geral
+  // de assistidos: os voluntários dessas equipes usam os cards próprios.
+  const hasNonDIAtendimento = atendimentos.some(
+    (at) => !isDesobsessaoInfantil(at.setor),
+  );
+
   const cards = [
     {
       key: "voluntarios",
@@ -50,8 +62,37 @@ export default async function HomePage() {
         "Consultar os assistidos e seus tratamentos, e cadastrar novos.",
       icon: <ClipboardUserIcon />,
       // O Atendimento Fraterno vê todos; os outros times veem os
-      // assistidos dos atendimentos da sua escala.
-      isVisible: isAdmin(volunteer) || atendimentos.length > 0,
+      // assistidos dos atendimentos da sua escala, com exceção da
+      // Desobsessão Infantil que tem cards próprios.
+      isVisible: isAdmin(volunteer) || hasNonDIAtendimento,
+    },
+    {
+      key: "di-i",
+      href: "/desobsessao-infantil-i",
+      title: "Assistentes em Desobsessão Infantil I",
+      description:
+        "Consultar os assistidos com tratamento ativo da Desobsessão Infantil I.",
+      icon: <ChildIcon />,
+      isVisible:
+        isAdmin(volunteer) ||
+        belongsToSector(sectors, DESOBSESSAO_INFANTIL_I_SECTOR) ||
+        // Compatibilidade com setor legado "Desobsessão Infantil" (sem sufixo).
+        sectors.some(
+          (s) =>
+            s.nome === "Desobsessão Infantil" &&
+            !belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
+        ),
+    },
+    {
+      key: "di-ii",
+      href: "/desobsessao-infantil-ii",
+      title: "Assistentes em Desobsessão Infantil II",
+      description:
+        "Consultar os assistidos com tratamento ativo da Desobsessão Infantil II.",
+      icon: <ChildIcon />,
+      isVisible:
+        isAdmin(volunteer) ||
+        belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
     },
     {
       key: "aca-lista-espera",
