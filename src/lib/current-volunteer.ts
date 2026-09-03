@@ -134,6 +134,14 @@ export function belongsToDepartment(
   return sectors.some((sector) => sector.departamento === department);
 }
 
+/** Whether these sectors give access to a specific sector's features. */
+export function belongsToSector(
+  sectors: VolunteerSector[],
+  sector: string,
+): boolean {
+  return sectors.some((item) => item.nome === sector);
+}
+
 /**
  * Same as `requireVolunteer`, but only for admins.
  *
@@ -168,6 +176,32 @@ export const requireDepartment = cache(async (
     current.volunteer.id,
   );
   if (!belongsToDepartment(sectors, department)) {
+    redirect("/");
+  }
+
+  return current;
+});
+
+/**
+ * Same as `requireVolunteer`, but only for who works in `sector` —
+ * admins always get through.
+ *
+ * Some features belong to a single sector rather than a whole
+ * department (the Acolher com Amor waiting list, e.g.) — this is the
+ * real gate and must be repeated inside every Server Action of those
+ * screens.
+ */
+export const requireSector = cache(async (
+  sector: string,
+): Promise<CurrentVolunteer> => {
+  const current = await requireVolunteer();
+  if (isAdmin(current.volunteer)) return current;
+
+  const sectors = await loadVolunteerSectors(
+    current.supabase,
+    current.volunteer.id,
+  );
+  if (!belongsToSector(sectors, sector)) {
     redirect("/");
   }
 
