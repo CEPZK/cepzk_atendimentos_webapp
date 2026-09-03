@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import {
+  belongsToSector,
   loadVolunteerAtendimentos,
   loadVolunteerSectors,
   requireVolunteer,
 } from "@/lib/current-volunteer";
 import { isAdmin, ROLE_LABELS } from "@/lib/volunteer";
+import { ACA_SECTOR } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
-import { ClipboardUserIcon, UsersIcon } from "@/app/icons";
+import { ClipboardUserIcon, ClockIcon, UsersIcon } from "@/app/icons";
 
 // Depends on the request cookies (session): never prerender.
 export const dynamic = "force-dynamic";
@@ -45,6 +47,17 @@ export default async function HomePage() {
       // O Atendimento Fraterno vê todos; os outros times veem os
       // assistidos dos atendimentos da sua escala.
       isVisible: isAdmin(volunteer) || atendimentos.length > 0,
+    },
+    {
+      key: "aca-lista-espera",
+      href: "/acolher-com-amor/lista-de-espera",
+      title: "Lista de Espera para o Acolher com Amor",
+      description:
+        "Consultar os assistidos cujo próximo tratamento é o Acolher com Amor.",
+      icon: <ClockIcon />,
+      // Só o próprio time do Acolher com Amor (mais o admin) acompanha
+      // quem está esperando por ele.
+      isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
     },
   ].filter((card) => card.isVisible);
 
