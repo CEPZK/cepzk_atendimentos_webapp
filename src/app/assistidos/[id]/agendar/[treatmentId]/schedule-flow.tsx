@@ -6,34 +6,24 @@ import type { CatalogItem } from "@/lib/assistido";
 import type { NameColor } from "@/lib/aca-agenda";
 import {
   SESSION_COUNT,
-  WEEKDAY_INITIALS,
   buildNameColors,
   dayKey,
-  nameColor,
-  shortName,
   formatLongDate,
   formatShortDate,
   formatTime,
-  monthGrid,
-  monthOf,
+  nameColor,
   sessionDates,
-  shiftMonth,
 } from "@/lib/aca-agenda";
+import { AcaMonthCalendar } from "@/app/aca-month-calendar";
 import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  HeartIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@/app/icons";
+  SessionProceduresFields,
+  type SessionProcedures,
+} from "@/app/session-procedures-fields";
+import {
+  TreatmentSummaryCard,
+  type TreatmentSummary,
+} from "@/app/treatment-summary-card";
 import { scheduleAcaTreatment } from "../../../actions";
-
-/** The treatment being scheduled, as recorded at the registration. */
-export interface TreatmentSummary {
-  distonia: string | null;
-  queixas: string[];
-  obs: string | null;
-}
 
 /** A day the atendimento happens, with who is already booked on it. */
 export interface CalendarDay {
@@ -53,9 +43,6 @@ interface ScheduleFlowProps {
   treatment: TreatmentSummary;
   procedimentos: CatalogItem[];
 }
-
-/** Procedures chosen for each session; `null` = an empty row. */
-type SessionProcedures = (number | null)[];
 
 /**
  * Two steps: pick the first day from the calendar of the atendimento,
@@ -124,7 +111,7 @@ export function ScheduleFlow({
 
   if (!selected) {
     return (
-      <MonthCalendar
+      <CalendarStep
         horario={horario}
         days={days}
         onChoose={chooseDay}
@@ -205,77 +192,45 @@ export function ScheduleFlow({
   );
 }
 
-/**
- * The procedures of one session: as many as the team wants, never the
- * same one twice — the options already chosen leave the other selects.
- */
-function SessionProceduresFields({
-  procedimentos,
-  value,
-  onChange,
+/** First step: the month calendar and the day's choice dialog. */
+function CalendarStep({
+  horario,
+  days,
+  onChoose,
 }: {
-  procedimentos: CatalogItem[];
-  value: SessionProcedures;
-  onChange: (next: SessionProcedures) => void;
+  horario: string;
+  days: CalendarDay[];
+  onChoose: (iso: string) => void;
 }) {
-  const chosen = value.filter((id): id is number => id !== null);
-  const canAdd = chosen.length === value.length && chosen.length < procedimentos.length;
+  const byDay = useMemo(
+    () => new Map(days.map((day) => [dayKey(day.iso), day])),
+    [days],
+  );
+  const colors = useMemo(
+    () => buildNameColors(days.flatMap((day) => day.assistidos)),
+    [days],
+  );
+  const [open, setOpen] = useState<string | null>(null);
+
+  const openDay = open ? byDay.get(open) : null;
 
   return (
-    <div className="mt-3 space-y-2">
-      {value.map((procedimentoId, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <select
-            value={procedimentoId ?? ""}
-            onChange={(event) =>
-              onChange(
-                value.map((item, i) =>
-                  i === index
-                    ? event.target.value
-                      ? Number(event.target.value)
-                      : null
-                    : item,
-                ),
-              )
-            }
-            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
-          >
-            <option value="">Selecione o procedimento</option>
-            {procedimentos
-              .filter(
-                (item) => item.id === procedimentoId || !chosen.includes(item.id),
-              )
-              .map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.nome}
-                </option>
-              ))}
-          </select>
-
-          {value.length > 1 && (
-            <button
-              type="button"
-              onClick={() => onChange(value.filter((_, i) => i !== index))}
-              aria-label="Remover procedimento"
-              className="shrink-0 rounded-lg border border-slate-300 p-2 text-slate-500 transition-colors hover:border-red-300 hover:text-red-600"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      ))}
-
-      {canAdd && (
-        <button
-          type="button"
-          onClick={() => onChange([...value, null])}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-700 transition-colors hover:text-teal-800"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Adicionar procedimento
-        </button>
+    <>
+      <AcaMonthCalendar
+        title="Escolha o dia da primeira sessão"
+        description={`Só os dias de atendimento (${horario}) podem ser escolhidos.`}
+        days={days}
+        onSelectDay={setOpen}
+      />
+      {openDay && (
+        <DayDialog
+          day={openDay}
+          colors={colors}
+          onCancel={() => setOpen(null)}
+          onChoose={() => onChoose(openDay.iso)}
+        />
       )}
-    </div>
+    </>
   );
 }
 
@@ -339,215 +294,6 @@ function ConfirmDialog({
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * The month calendar: the grid the team already reads in the Google
- * Calendar, with only the days of the atendimento open. Each of those
- * days carries the assistidos already booked on it; the rest of the
- * month stays visible but muted, so the date is read in context.
- */
-function MonthCalendar({
-  horario,
-  days,
-  onChoose,
-}: {
-  horario: string;
-  days: CalendarDay[];
-  onChoose: (iso: string) => void;
-}) {
-  const byDay = useMemo(
-    () => new Map(days.map((day) => [dayKey(day.iso), day])),
-    [days],
-  );
-
-  // Uma cor por assistido, válida em toda a agenda: o mesmo nome tem a
-  // mesma cor em qualquer dia e em qualquer mês da tela.
-  const colors = useMemo(
-    () => buildNameColors(days.flatMap((day) => day.assistidos)),
-    [days],
-  );
-
-  const first = days[0] ? monthOf(dayKey(days[0].iso)) : null;
-  const last = days[days.length - 1]
-    ? monthOf(dayKey(days[days.length - 1].iso))
-    : null;
-
-  const [cursor, setCursor] = useState(
-    first ?? { year: new Date().getFullYear(), month: new Date().getMonth() + 1 },
-  );
-  const [open, setOpen] = useState<string | null>(null);
-
-  const grid = useMemo(() => monthGrid(cursor.year, cursor.month), [cursor]);
-
-  // Os dias da semana em que a casa atende. As outras colunas existem só
-  // para situar a data, então ficam estreitas e devolvem a largura para
-  // a coluna que interessa — com um único sábado, ele fica ~4x maior.
-  const activeWeekdays = useMemo(() => {
-    const weekdays = new Set<number>();
-    for (const day of days) {
-      const [year, month, date] = dayKey(day.iso).split("-").map(Number);
-      weekdays.add(new Date(Date.UTC(year, month - 1, date)).getUTCDay());
-    }
-    return weekdays;
-  }, [days]);
-
-  const columns = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, weekday) =>
-        activeWeekdays.has(weekday) ? "minmax(0,4fr)" : "minmax(0,1fr)",
-      ).join(" "),
-    [activeWeekdays],
-  );
-  const index = cursor.year * 12 + cursor.month;
-  const canGoBack = first ? index > first.year * 12 + first.month : false;
-  const canGoForward = last ? index < last.year * 12 + last.month : false;
-
-  const openDay = open ? byDay.get(open) : null;
-
-  if (days.length === 0) {
-    return (
-      <p className="mt-6 text-sm text-slate-500">Nenhuma data disponível.</p>
-    );
-  }
-
-  return (
-    <section className="mt-6">
-      <h2 className="text-base font-semibold text-slate-900">
-        Escolha o dia da primeira sessão
-      </h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Só os dias de atendimento ({horario}) podem ser escolhidos.
-      </p>
-
-      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setCursor(shiftMonth(cursor, -1))}
-            disabled={!canGoBack}
-            aria-label="Mês anterior"
-            className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </button>
-          <p className="text-sm font-semibold text-slate-900 first-letter:uppercase">
-            {grid.label}
-          </p>
-          <button
-            type="button"
-            onClick={() => setCursor(shiftMonth(cursor, 1))}
-            disabled={!canGoForward}
-            aria-label="Próximo mês"
-            className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            <ChevronRightIcon className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div
-          className="grid border-b border-slate-200 bg-slate-50"
-          style={{ gridTemplateColumns: columns }}
-        >
-          {WEEKDAY_INITIALS.map((initial, position) => (
-            <div
-              key={position}
-              className={`px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide ${
-                activeWeekdays.has(position) ? "text-slate-700" : "text-slate-400"
-              }`}
-            >
-              {initial}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid" style={{ gridTemplateColumns: columns }}>
-          {grid.weeks.flat().map((cell) => {
-            const day = byDay.get(cell.key);
-            // Um dia de atendimento é escolhível mesmo quando pertence ao
-            // mês vizinho: a grade de setembro já mostra os primeiros
-            // sábados de outubro, e obrigar a virar o mês para clicar
-            // neles é atrito puro.
-            const available = Boolean(day);
-
-            return (
-              <div
-                key={cell.key}
-                className="min-h-[74px] border-b border-r border-slate-100 p-1 last:border-r-0 sm:min-h-[92px]"
-              >
-                {available ? (
-                  <button
-                    type="button"
-                    onClick={() => setOpen(cell.key)}
-                    className={`flex h-full w-full flex-col items-start gap-1 rounded-lg p-1.5 text-left ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 ${
-                      cell.inMonth
-                        ? "bg-teal-50/70 ring-teal-100 hover:bg-teal-100"
-                        : // Fora do mês: mesma célula, apenas mais discreta.
-                          "bg-teal-50/30 ring-teal-50 hover:bg-teal-100/70"
-                    }`}
-                  >
-                    <span
-                      className={`text-sm font-semibold ${
-                        cell.inMonth ? "text-teal-800" : "text-teal-700/60"
-                      }`}
-                    >
-                      {cell.day}
-                    </span>
-                    <span
-                      className={`text-[10px] font-medium ${
-                        cell.inMonth ? "text-teal-700" : "text-teal-700/60"
-                      }`}
-                    >
-                      {formatTime(day!.iso)}
-                    </span>
-                    {day!.assistidos.length > 0 && (
-                      <span className="mt-1 flex w-full flex-col gap-0.5">
-                        {day!.assistidos.slice(0, 4).map((nome) => (
-                          <span
-                            key={nome}
-                            title={nome}
-                            className={`truncate rounded px-1 py-0.5 text-[10px] font-medium ring-1 ring-inset ${
-                              (colors.get(nome) ?? nameColor(nome)).chip
-                            } ${cell.inMonth ? "" : "opacity-60"}`}
-                          >
-                            {shortName(nome)}
-                          </span>
-                        ))}
-                        {day!.assistidos.length > 4 && (
-                          <span className="px-1 text-[10px] font-medium text-slate-500">
-                            +{day!.assistidos.length - 4}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </button>
-                ) : (
-                  <div className="p-1.5">
-                    <span
-                      className={`text-sm ${
-                        cell.inMonth ? "text-slate-400" : "text-slate-300"
-                      }`}
-                    >
-                      {cell.day}
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {openDay && (
-        <DayDialog
-          day={openDay}
-          colors={colors}
-          onCancel={() => setOpen(null)}
-          onChoose={() => onChoose(openDay.iso)}
-        />
-      )}
-    </section>
   );
 }
 
@@ -623,62 +369,5 @@ function DayDialog({
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * What the Atendimento Fraterno recorded about this treatment.
- *
- * The procedures of each session are chosen from the distonia and the
- * complaints, so they are read here, next to the selects, instead of
- * forcing a trip back to the assistido's screen.
- */
-function TreatmentSummaryCard({ treatment }: { treatment: TreatmentSummary }) {
-  const isEmpty =
-    !treatment.distonia && treatment.queixas.length === 0 && !treatment.obs;
-
-  if (isEmpty) return null;
-
-  return (
-    <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-900">
-        Dados do tratamento
-      </h3>
-
-      {treatment.distonia && (
-        <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-          <HeartIcon className="h-4 w-4 shrink-0 text-teal-700" />
-          <span>
-            <span className="text-slate-500">Distonia relatada: </span>
-            {treatment.distonia}
-          </span>
-        </p>
-      )}
-
-      {treatment.queixas.length > 0 && (
-        <div className="mt-3">
-          <p className="text-xs text-slate-500">Principais queixas</p>
-          <ul className="mt-1 flex flex-wrap gap-1.5">
-            {treatment.queixas.map((queixa) => (
-              <li
-                key={queixa}
-                className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
-              >
-                {queixa}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {treatment.obs && (
-        <div className="mt-3">
-          <p className="text-xs text-slate-500">Observações</p>
-          <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700">
-            {treatment.obs}
-          </p>
-        </div>
-      )}
-    </section>
   );
 }

@@ -7,6 +7,7 @@ import {
   ACA_SECTOR,
   ATENDIMENTO_FRATERNO,
   findSimilarNames,
+  isAcolherComAmor,
   canonicalState,
   treatmentStateAction,
   ESTADO_EM_TRATAMENTO,
@@ -529,8 +530,157 @@ export async function scheduleAcaTreatment(
   revalidatePath(`/assistidos/${treatment.assistido_id}`);
   // Quem sai de "pendente" sai da fila do Acolher com Amor.
   revalidatePath("/acolher-com-amor/lista-de-espera");
+  // As novas sessões entram no calendário do Acolher com Amor.
+  revalidatePath("/acolher-com-amor/calendario");
   return {
     ok: true,
     message: `Tratamento agendado em ${SESSION_COUNT} sessões.`,
   };
+}
+
+interface SessionProceduresInput {
+  sessaoId: number;
+  procedimentoIds: number[];
+}
+
+interface UpdateProceduresInput {
+  treatmentId: number;
+  sessions: SessionProceduresInput[];
+}
+
+/**
+ * Updates the procedures of an already-scheduled Acolher com Amor
+ * treatment: for each session, replaces the recorded procedures with the
+ * ones the team sent.
+ *
+ * The screen is reached from the sessions calendar, and the check that
+ * the volunteer manages this atendimento is repeated here, as in every
+ * action. PostgREST has no transactions, so each session swaps its
+ * procedures one at a time (removes the current ones, writes the new).
+ */
+export async function updateAcaTreatmentProcedures(
+  input: UpdateProceduresInput,
+): Promise<ActionResult> {
+  const access = await requireAssistidoAccess();
+  const { supabase } = access;
+
+  const { data: treatment, error } = await supabase
+    .from("cepzk_tratamento")
+    .select(
+      `id, estado, assistido_id, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT})`,
+    )
+    .eq("id", input.treatmentId)
+    .maybeSingle<TreatmentStateRow>();
+
+  if (error || !treatment) {
+    return {
+      ok: false,
+      message: error
+        ? `Não foi possível ler o tratamento (${error.code}: ${error.message}).`
+        : "Tratamento não encontrado.",
+    };
+  }
+
+  if (!access.canManageTreatment(treatment.atendimento_id)) {
+    return { ok: false, message: "Este tratamento é de outro atendimento." };
+  }
+
+  const embedded = Array.isArray(treatment.atendimento)
+    ? treatment.atendimento[0]
+    : treatment.atendimento;
+  const atendimento = embedded ? mapAtendimento(embedded) : null;
+
+  if (!atendimento || !isAcolherComAmor(atendimento.setor)) {
+    return { ok: false, message: "Este tratamento não é do Acolher com Amor." };
+  }
+
+  // As sessões que já existem: a edição é apenas dos procedimentos delas.
+  const { data: sessions } = await supabase
+    .from("aca_sessao")
+    .select("id")
+    .eq("tratamento_id", treatment.id)
+    .returns<{ id: number }[]>();
+
+  const sessionIds = new Set((sessions ?? []).map((row) => row.id));
+  if (sessionIds.size === 0) {
+    return {
+      ok: false,
+      message: "Este tratamento ainda não tem sessões agendadas.",
+    };
+  }
+
+  const receivedIds = new Set<number>();
+  for (const session of input.sessions) {
+    if (!sessionIds.has(session.sessaoId)) {
+      return {
+        ok: false,
+        message: "Sessão não encontrada neste tratamento.",
+      };
+    }
+    if (receivedIds.has(session.sessaoId)) {
+      return { ok: false, message: "Há sessões repetidas." };
+    }
+    receivedIds.add(session.sessaoId);
+  }
+  if (receivedIds.size !== sessionIds.size) {
+    return {
+      ok: false,
+      message: "Todas as sessões do tratamento precisam ser enviadas.",
+    };
+  }
+
+  const { data: procedimentos } = await supabase
+    .from("aca_procedimento")
+    .select("id")
+    .returns<{ id: number }[]>();
+  const validProcedimentos = new Set((procedimentos ?? []).map((p) => p.id));
+
+  for (const session of input.sessions) {
+    const ids = session.procedimentoIds;
+    if (new Set(ids).size !== ids.length) {
+      return {
+        ok: false,
+        message: "Um procedimento não pode se repetir na mesma sessão.",
+      };
+    }
+    if (ids.some((id) => !validProcedimentos.has(id))) {
+      return { ok: false, message: "Procedimento inválido." };
+    }
+  }
+
+  for (const session of input.sessions) {
+    const { error: deleteError } = await supabase
+      .from("aca_sessao_procedimento")
+      .delete()
+      .eq("sessao_id", session.sessaoId);
+
+    if (deleteError) {
+      return {
+        ok: false,
+        message: `Não foi possível atualizar a sessão (${deleteError.code}: ${deleteError.message}).`,
+      };
+    }
+
+    if (session.procedimentoIds.length === 0) continue;
+
+    const { error: insertError } = await supabase
+      .from("aca_sessao_procedimento")
+      .insert(
+        session.procedimentoIds.map((procedimentoId) => ({
+          sessao_id: session.sessaoId,
+          procedimento_id: procedimentoId,
+        })),
+      );
+
+    if (insertError) {
+      return {
+        ok: false,
+        message: `Não foi possível registrar os procedimentos (${insertError.code}: ${insertError.message}).`,
+      };
+    }
+  }
+
+  revalidatePath("/acolher-com-amor/calendario");
+  revalidatePath(`/assistidos/${treatment.assistido_id}`);
+  return { ok: true, message: "Sessões atualizadas." };
 }
