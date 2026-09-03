@@ -22,6 +22,27 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
+}
+
+/**
+ * Where "Voltar" takes the volunteer back to.
+ *
+ * The assistido screen is reached from more than one list now (a
+ * volunteer of the Acolher com Amor can open it from their waiting
+ * list, not only from the general Assistidos list), so the previous
+ * screen travels in `?from=` instead of being hardcoded.
+ */
+const BACK_TARGETS: Record<string, { href: string; label: string }> = {
+  "aca-waitlist": {
+    href: "/acolher-com-amor/lista-de-espera",
+    label: "Lista de Espera",
+  },
+};
+const DEFAULT_BACK_TARGET = { href: "/assistidos", label: "Assistidos" };
+
+function resolveBackTarget(from: string | undefined) {
+  return (from && BACK_TARGETS[from]) || DEFAULT_BACK_TARGET;
 }
 
 /** PostgREST returns embedded rows as an object or as a single-item array. */
@@ -105,8 +126,13 @@ export async function generateMetadata({
   return { title: assistido?.nome_completo ?? "Assistido" };
 }
 
-export default async function AssistidoPage({ params }: PageProps) {
+export default async function AssistidoPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const { from } = await searchParams;
+  const backTarget = resolveBackTarget(from);
   const { access, assistido, treatmentRows } = await loadAssistido(id);
 
   if (!assistido) {
@@ -121,7 +147,7 @@ export default async function AssistidoPage({ params }: PageProps) {
     !access.isFull &&
     !rows.some((row) => access.canSeeTreatment(row.atendimento_id))
   ) {
-    redirect("/assistidos");
+    redirect(backTarget.href);
   }
 
   const treatments: VisibleTreatment[] = rows
@@ -175,11 +201,11 @@ export default async function AssistidoPage({ params }: PageProps) {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
-        href="/assistidos"
+        href={backTarget.href}
         className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-teal-700"
       >
         <ArrowLeftIcon className="h-4 w-4" />
-        Assistidos
+        {backTarget.label}
       </Link>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
