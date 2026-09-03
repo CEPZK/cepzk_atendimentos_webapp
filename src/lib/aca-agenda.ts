@@ -211,6 +211,23 @@ export function dayKey(date: Date | string): string {
   return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
 }
 
+/**
+ * The key of the day the house is living now — what a screen compares a
+ * session against to tell that it happens today.
+ *
+ * It is the house's day, not the server's: a volunteer opening the app at
+ * 00:30 of Sunday in Brazil still sees Saturday's session as today's even
+ * when the server runs in UTC and already counts Sunday.
+ */
+export function todayKey(from: Date = new Date()): string {
+  return dayKey(from);
+}
+
+/** Whether an instant falls on the day a `dayKey()` key names. */
+export function isOnDay(date: Date | string, key: string): boolean {
+  return dayKey(date) === key;
+}
+
 /** Whether an instant falls on the weekday and time of the schedule. */
 export function matchesSchedule(
   date: Date,

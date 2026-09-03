@@ -3,7 +3,12 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { CatalogItem } from "@/lib/assistido";
-import { formatLongDate, formatShortDate, formatTime } from "@/lib/aca-agenda";
+import {
+  formatLongDate,
+  formatShortDate,
+  formatTime,
+  isOnDay,
+} from "@/lib/aca-agenda";
 import {
   SessionProceduresFields,
   type SessionProcedures,
@@ -28,6 +33,11 @@ interface TreatmentSessionsEditorProps {
   sessions: EditableSession[];
   treatment: TreatmentSummary;
   procedimentos: CatalogItem[];
+  /**
+   * `YYYY-MM-DD` key of the current day in the house's time zone, given by
+   * the page: the session that falls on it is highlighted.
+   */
+  today: string;
 }
 
 interface SessionState {
@@ -39,7 +49,8 @@ interface SessionState {
 /**
  * The treatment of an assistido already scheduled, opened from the
  * calendar: the same screen as the treatment start, but loaded with the
- * existing sessions. Procedures can be changed, removed and added.
+ * existing sessions. Procedures can be changed, removed and added, and
+ * the session of the current day — when there is one — is highlighted.
  */
 export function TreatmentSessionsEditor({
   treatmentId,
@@ -47,6 +58,7 @@ export function TreatmentSessionsEditor({
   sessions,
   treatment,
   procedimentos,
+  today,
 }: TreatmentSessionsEditorProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -109,25 +121,43 @@ export function TreatmentSessionsEditor({
       <TreatmentSummaryCard treatment={treatment} />
 
       <ol className="mt-4 space-y-3">
-        {state.map((session, index) => (
-          <li
-            key={session.sessaoId}
-            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <p className="text-sm font-semibold text-slate-900 first-letter:uppercase">
-              {index + 1}ª sessão — {formatLongDate(session.data)}
-            </p>
-            <p className="text-xs text-slate-500">
-              {formatShortDate(session.data)} · {formatTime(session.data)}
-            </p>
+        {state.map((session, index) => {
+          // A sessão do dia corrente ganha destaque: é a que o voluntário
+          // procura ao abrir a tela no próprio dia do atendimento.
+          const isToday = isOnDay(session.data, today);
 
-            <SessionProceduresFields
-              procedimentos={procedimentos}
-              value={session.procedimentos}
-              onChange={(next) => updateSession(index, next)}
-            />
-          </li>
-        ))}
+          return (
+            <li
+              key={session.sessaoId}
+              aria-current={isToday ? "date" : undefined}
+              className={`rounded-2xl border p-4 shadow-sm ${
+                isToday
+                  ? "border-teal-300 bg-teal-50/70 ring-1 ring-inset ring-teal-200"
+                  : "border-slate-200 bg-white"
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900 first-letter:uppercase">
+                  {index + 1}ª sessão — {formatLongDate(session.data)}
+                </p>
+                {isToday && (
+                  <span className="rounded-full bg-teal-700 px-2.5 py-0.5 text-xs font-semibold text-white">
+                    Hoje
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">
+                {formatShortDate(session.data)} · {formatTime(session.data)}
+              </p>
+
+              <SessionProceduresFields
+                procedimentos={procedimentos}
+                value={session.procedimentos}
+                onChange={(next) => updateSession(index, next)}
+              />
+            </li>
+          );
+        })}
       </ol>
 
       {error && (
