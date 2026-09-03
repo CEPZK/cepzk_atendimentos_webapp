@@ -8,7 +8,12 @@ import {
 import { isAdmin, ROLE_LABELS } from "@/lib/volunteer";
 import { ACA_SECTOR } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
-import { ClipboardUserIcon, ClockIcon, UsersIcon } from "@/app/icons";
+import {
+  CalendarIcon,
+  ClipboardUserIcon,
+  ClockIcon,
+  UsersIcon,
+} from "@/app/icons";
 
 // Depends on the request cookies (session): never prerender.
 export const dynamic = "force-dynamic";
@@ -57,6 +62,17 @@ export default async function HomePage() {
       icon: <ClockIcon />,
       // Só o próprio time do Acolher com Amor (mais o admin) acompanha
       // quem está esperando por ele.
+      isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
+    },
+    {
+      key: "aca-calendario",
+      href: "/acolher-com-amor/calendario",
+      title: "Calendário do Acolher com Amor",
+      description:
+        "Ver as sessões agendadas e ajustar os tratamentos de cada assistido.",
+      icon: <CalendarIcon />,
+      // Mesmo público da lista de espera: o time do Acolher com Amor
+      // (mais o admin).
       isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
     },
   ].filter((card) => card.isVisible);
