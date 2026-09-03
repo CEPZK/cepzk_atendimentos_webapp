@@ -14,8 +14,8 @@ export const SESSION_COUNT = 3;
 /** One session every other week: skips one occurrence of the weekday. */
 export const SESSION_INTERVAL_DAYS = 14;
 
-/** How many upcoming dates the calendar offers. */
-export const CALENDAR_OCCURRENCES = 8;
+/** How many upcoming dates the calendar offers (~6 months of weeks). */
+export const CALENDAR_OCCURRENCES = 26;
 
 /**
  * The house is in Brazil and the schedule ("Sábado 9h30") has no time
@@ -231,4 +231,90 @@ export function matchesSchedule(
       schedule.minute,
     ).getTime() === date.getTime()
   );
+}
+
+// -----------------------------------------------------------------------------
+// Month grid (the calendar the team is used to)
+// -----------------------------------------------------------------------------
+
+/** Sunday-first initials of the week header. */
+export const WEEKDAY_INITIALS = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+export interface MonthCell {
+  /** `YYYY-MM-DD` in the house's time zone — the key of the day. */
+  key: string;
+  day: number;
+  /** `false` for the leading/trailing days of the neighbouring months. */
+  inMonth: boolean;
+}
+
+export interface MonthGrid {
+  year: number;
+  /** 1–12. */
+  month: number;
+  /** "setembro de 2026". */
+  label: string;
+  /** Six weeks of seven days, as a month calendar is drawn. */
+  weeks: MonthCell[][];
+}
+
+const MONTH_LABEL = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "UTC",
+  month: "long",
+  year: "numeric",
+});
+
+/** The `YYYY-MM-DD` key of a house-local calendar date. */
+export function dayKeyOf(year: number, month: number, day: number): string {
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+/** The month a day key belongs to, as `{ year, month }`. */
+export function monthOf(key: string): { year: number; month: number } {
+  const [year, month] = key.split("-").map(Number);
+  return { year, month };
+}
+
+/** `{ year, month }` moved by `delta` months. */
+export function shiftMonth(
+  cursor: { year: number; month: number },
+  delta: number,
+): { year: number; month: number } {
+  const index = cursor.year * 12 + (cursor.month - 1) + delta;
+  return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+}
+
+/**
+ * The month as a calendar grid: six weeks starting on Sunday, with the
+ * neighbouring days filled in so every row has seven cells.
+ *
+ * The arithmetic runs in UTC over the calendar date alone (no instants),
+ * so the grid is the same everywhere the app runs.
+ */
+export function monthGrid(year: number, month: number): MonthGrid {
+  const first = new Date(Date.UTC(year, month - 1, 1));
+  const start = new Date(first);
+  start.setUTCDate(1 - first.getUTCDay());
+
+  const weeks: MonthCell[][] = [];
+  const cursor = new Date(start);
+
+  for (let week = 0; week < 6; week++) {
+    const days: MonthCell[] = [];
+    for (let day = 0; day < 7; day++) {
+      days.push({
+        key: dayKeyOf(
+          cursor.getUTCFullYear(),
+          cursor.getUTCMonth() + 1,
+          cursor.getUTCDate(),
+        ),
+        day: cursor.getUTCDate(),
+        inMonth: cursor.getUTCMonth() === month - 1,
+      });
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    weeks.push(days);
+  }
+
+  return { year, month, label: MONTH_LABEL.format(first), weeks };
 }

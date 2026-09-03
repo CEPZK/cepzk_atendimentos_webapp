@@ -5,12 +5,22 @@ import { useRouter } from "next/navigation";
 import type { CatalogItem } from "@/lib/assistido";
 import {
   SESSION_COUNT,
+  WEEKDAY_INITIALS,
+  dayKey,
   formatLongDate,
   formatShortDate,
   formatTime,
+  monthGrid,
+  monthOf,
   sessionDates,
+  shiftMonth,
 } from "@/lib/aca-agenda";
-import { CalendarIcon, PlusIcon, TrashIcon } from "@/app/icons";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@/app/icons";
 import { scheduleAcaTreatment } from "../../../actions";
 
 /** A day the atendimento happens, with who is already booked on it. */
@@ -97,60 +107,11 @@ export function ScheduleFlow({
 
   if (!selected) {
     return (
-      <section className="mt-6">
-        <h2 className="text-base font-semibold text-slate-900">
-          Escolha o dia da primeira sessão
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Apenas os dias de atendimento ({horario}) são oferecidos.
-        </p>
-
-        {days.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-500">
-            Nenhuma data disponível.
-          </p>
-        ) : (
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-            {days.map((day) => (
-              <li key={day.iso}>
-                <button
-                  type="button"
-                  onClick={() => chooseDay(day.iso)}
-                  className="flex h-full w-full flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-colors hover:border-teal-600 hover:bg-teal-50/40 focus:outline-none focus:ring-2 focus:ring-teal-600"
-                >
-                  <span className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 shrink-0 text-teal-700" />
-                    <span className="text-sm font-semibold text-slate-900 first-letter:uppercase">
-                      {formatLongDate(day.iso)}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 text-xs text-slate-500">
-                    {formatShortDate(day.iso)} · {formatTime(day.iso)}
-                  </span>
-
-                  <span className="mt-3 block text-xs text-slate-500">
-                    {day.assistidos.length === 0
-                      ? "Nenhum assistido agendado"
-                      : `Agendados (${day.assistidos.length})`}
-                  </span>
-                  {day.assistidos.length > 0 && (
-                    <span className="mt-1 flex flex-wrap gap-1.5">
-                      {day.assistidos.map((nome) => (
-                        <span
-                          key={nome}
-                          className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
-                        >
-                          {nome}
-                        </span>
-                      ))}
-                    </span>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <MonthCalendar
+        horario={horario}
+        days={days}
+        onChoose={chooseDay}
+      />
     );
   }
 
@@ -353,6 +314,218 @@ function ConfirmDialog({
             onClick={onCancel}
             disabled={isPending}
             className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60 sm:flex-1"
+          >
+            Voltar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The month calendar: the grid the team already reads in the Google
+ * Calendar, with only the days of the atendimento open. Each of those
+ * days carries the assistidos already booked on it; the rest of the
+ * month stays visible but muted, so the date is read in context.
+ */
+function MonthCalendar({
+  horario,
+  days,
+  onChoose,
+}: {
+  horario: string;
+  days: CalendarDay[];
+  onChoose: (iso: string) => void;
+}) {
+  const byDay = useMemo(
+    () => new Map(days.map((day) => [dayKey(day.iso), day])),
+    [days],
+  );
+
+  const first = days[0] ? monthOf(dayKey(days[0].iso)) : null;
+  const last = days[days.length - 1]
+    ? monthOf(dayKey(days[days.length - 1].iso))
+    : null;
+
+  const [cursor, setCursor] = useState(
+    first ?? { year: new Date().getFullYear(), month: new Date().getMonth() + 1 },
+  );
+  const [open, setOpen] = useState<string | null>(null);
+
+  const grid = useMemo(() => monthGrid(cursor.year, cursor.month), [cursor]);
+  const index = cursor.year * 12 + cursor.month;
+  const canGoBack = first ? index > first.year * 12 + first.month : false;
+  const canGoForward = last ? index < last.year * 12 + last.month : false;
+
+  const openDay = open ? byDay.get(open) : null;
+
+  if (days.length === 0) {
+    return (
+      <p className="mt-6 text-sm text-slate-500">Nenhuma data disponível.</p>
+    );
+  }
+
+  return (
+    <section className="mt-6">
+      <h2 className="text-base font-semibold text-slate-900">
+        Escolha o dia da primeira sessão
+      </h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Só os dias de atendimento ({horario}) podem ser escolhidos.
+      </p>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setCursor(shiftMonth(cursor, -1))}
+            disabled={!canGoBack}
+            aria-label="Mês anterior"
+            className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ChevronLeftIcon className="h-5 w-5" />
+          </button>
+          <p className="text-sm font-semibold text-slate-900 first-letter:uppercase">
+            {grid.label}
+          </p>
+          <button
+            type="button"
+            onClick={() => setCursor(shiftMonth(cursor, 1))}
+            disabled={!canGoForward}
+            aria-label="Próximo mês"
+            className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ChevronRightIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
+          {WEEKDAY_INITIALS.map((initial, position) => (
+            <div
+              key={position}
+              className="px-1 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+            >
+              {initial}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7">
+          {grid.weeks.flat().map((cell) => {
+            const day = byDay.get(cell.key);
+            const available = Boolean(day) && cell.inMonth;
+
+            return (
+              <div
+                key={cell.key}
+                className="min-h-[74px] border-b border-r border-slate-100 p-1 last:border-r-0 sm:min-h-[92px]"
+              >
+                {available ? (
+                  <button
+                    type="button"
+                    onClick={() => setOpen(cell.key)}
+                    className="flex h-full w-full flex-col items-start gap-1 rounded-lg bg-teal-50/70 p-1.5 text-left ring-1 ring-inset ring-teal-100 transition-colors hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-600"
+                  >
+                    <span className="text-sm font-semibold text-teal-800">
+                      {cell.day}
+                    </span>
+                    <span className="text-[10px] font-medium text-teal-700">
+                      {formatTime(day!.iso)}
+                    </span>
+                    {day!.assistidos.length > 0 && (
+                      <span className="mt-auto w-full truncate rounded bg-teal-700 px-1 py-0.5 text-[10px] font-medium text-white">
+                        {day!.assistidos.length} agendado
+                        {day!.assistidos.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </button>
+                ) : (
+                  <div className="p-1.5">
+                    <span
+                      className={`text-sm ${
+                        cell.inMonth ? "text-slate-400" : "text-slate-300"
+                      }`}
+                    >
+                      {cell.day}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {openDay && (
+        <DayDialog
+          day={openDay}
+          onCancel={() => setOpen(null)}
+          onChoose={() => onChoose(openDay.iso)}
+        />
+      )}
+    </section>
+  );
+}
+
+/** The day of the atendimento: who is booked on it, and the choice. */
+function DayDialog({
+  day,
+  onCancel,
+  onChoose,
+}: {
+  day: CalendarDay;
+  onCancel: () => void;
+  onChoose: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dia-atendimento"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
+    >
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h3
+          id="dia-atendimento"
+          className="text-base font-semibold text-slate-900 first-letter:uppercase"
+        >
+          {formatLongDate(day.iso)}
+        </h3>
+        <p className="mt-0.5 text-xs text-slate-500">
+          {formatShortDate(day.iso)} · {formatTime(day.iso)}
+        </p>
+
+        <p className="mt-4 text-xs font-medium text-slate-500">
+          {day.assistidos.length === 0
+            ? "Nenhum assistido agendado"
+            : `Assistidos agendados (${day.assistidos.length})`}
+        </p>
+        {day.assistidos.length > 0 && (
+          <ul className="mt-2 max-h-56 space-y-1 overflow-y-auto">
+            {day.assistidos.map((nome) => (
+              <li
+                key={nome}
+                className="rounded-lg bg-slate-50 px-3 py-1.5 text-sm text-slate-700"
+              >
+                {nome}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row-reverse">
+          <button
+            type="button"
+            onClick={onChoose}
+            className="inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 sm:flex-1"
+          >
+            Começar neste dia
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 sm:flex-1"
           >
             Voltar
           </button>
