@@ -12,6 +12,7 @@ import {
   ATENDIMENTO_SELECT,
   type AtendimentoRow,
 } from "@/lib/atendimento";
+import { todayKey } from "@/lib/aca-agenda";
 import { ArrowLeftIcon } from "@/app/icons";
 import {
   TreatmentSessionsEditor,
@@ -117,6 +118,11 @@ export default async function AcaTreatmentSessionsPage({
 
   const assistidoNome = one(treatment.assistido)?.nome_completo ?? "Assistido";
 
+  // A sessão do dia corrente é destacada na tela. O dia é o da casa, não o
+  // do fuso do servidor, e vem calculado daqui (a página é dinâmica) para
+  // que o servidor e o browser destaquem sempre a mesma sessão.
+  const today = todayKey();
+
   const treatmentData = {
     distonia: one(one(treatment.aca)?.distonia)?.nome ?? null,
     queixas: (treatment.queixas ?? [])
@@ -149,6 +155,7 @@ export default async function AcaTreatmentSessionsPage({
         sessions={sessions}
         treatment={treatmentData}
         procedimentos={procedimentos ?? []}
+        today={today}
       />
     </main>
   );
