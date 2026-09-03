@@ -322,6 +322,8 @@ export async function updateTreatmentState(
 
   revalidatePath("/assistidos");
   revalidatePath(`/assistidos/${treatment.assistido_id}`);
+  // Quem sai de "pendente" sai da fila do Acolher com Amor.
+  revalidatePath("/acolher-com-amor/lista-de-espera");
   return { ok: true, message: `Situação alterada para ${allowed.nextState}.` };
 }
 
@@ -525,6 +527,8 @@ export async function scheduleAcaTreatment(
 
   revalidatePath("/assistidos");
   revalidatePath(`/assistidos/${treatment.assistido_id}`);
+  // Quem sai de "pendente" sai da fila do Acolher com Amor.
+  revalidatePath("/acolher-com-amor/lista-de-espera");
   return {
     ok: true,
     message: `Tratamento agendado em ${SESSION_COUNT} sessões.`,

@@ -26,6 +26,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string; treatmentId: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
 export const metadata: Metadata = {
@@ -66,8 +67,15 @@ interface SessionRow {
  * one with the assistidos already booked, and then the three sessions of
  * the treatment being started.
  */
-export default async function AgendarPage({ params }: PageProps) {
+export default async function AgendarPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id, treatmentId } = await params;
+  // De onde o voluntário veio (a Lista de Espera, por exemplo): o voltar
+  // e o fim do agendamento devolvem para a mesma lista.
+  const { from } = await searchParams;
+  const backQuery = from ? `?from=${encodeURIComponent(from)}` : "";
   const access = await requireAssistidoAccess();
   const { supabase } = access;
 
@@ -94,7 +102,7 @@ export default async function AgendarPage({ params }: PageProps) {
     !isState(treatment.estado, ESTADO_PENDENTE) ||
     !access.canManageTreatment(treatment.atendimento_id)
   ) {
-    redirect(`/assistidos/${id}`);
+    redirect(`/assistidos/${id}${backQuery}`);
   }
 
   const schedule = parseHorario(atendimento.horario);
@@ -152,7 +160,7 @@ export default async function AgendarPage({ params }: PageProps) {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
-        href={`/assistidos/${id}`}
+        href={`/assistidos/${id}${backQuery}`}
         className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-teal-700"
       >
         <ArrowLeftIcon className="h-4 w-4" />
@@ -169,6 +177,7 @@ export default async function AgendarPage({ params }: PageProps) {
       {schedule ? (
         <ScheduleFlow
           assistidoId={Number(id)}
+          backQuery={backQuery}
           treatmentId={treatment.id}
           assistidoNome={assistidoNome}
           horario={atendimento.horario}

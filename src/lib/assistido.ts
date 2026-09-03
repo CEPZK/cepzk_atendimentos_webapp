@@ -203,6 +203,82 @@ export function buildAssistidoList(
   );
 }
 
+/**
+ * One treatment as needed to compute the Acolher com Amor waiting list:
+ * just enough to find, per assistido, the pendente treatment of lowest
+ * precedência (their "next treatment").
+ */
+export interface AcaWaitlistTreatmentRow {
+  assistido_id: number;
+  estado: string;
+  /** Priority of the atendimento: lower = next. Null sorts last. */
+  precedencia: number | null;
+  setor: string;
+  data_atualizacao: string;
+}
+
+/** One assistido in the Acolher com Amor waiting list. */
+export interface AcaWaitlistItem extends Assistido {
+  /** `data_atualizacao` of their pendente Acolher com Amor treatment. */
+  dataAtualizacao: string;
+}
+
+/**
+ * The Acolher com Amor waiting list: assistidos whose next treatment —
+ * the pendente treatment of lowest precedência — is the Acolher com
+ * Amor, ordered by that treatment's `data_atualizacao`, descending.
+ *
+ * A treatment only counts as "next" while it is still pendente: once it
+ * moves to "em tratamento" or "alta" it stops competing for the lowest
+ * precedência, and once resolved for the assistido it also stops being
+ * eligible for this list.
+ */
+export function buildAcaWaitlist(
+  assistidos: Assistido[],
+  treatments: AcaWaitlistTreatmentRow[],
+): AcaWaitlistItem[] {
+  const pendingByAssistido = new Map<number, AcaWaitlistTreatmentRow[]>();
+
+  for (const row of treatments) {
+    if (!isState(row.estado, ESTADO_PENDENTE)) continue;
+    const rows = pendingByAssistido.get(row.assistido_id) ?? [];
+    rows.push(row);
+    pendingByAssistido.set(row.assistido_id, rows);
+  }
+
+  const names = new Map(
+    assistidos.map((assistido) => [assistido.id, assistido.nome_completo]),
+  );
+
+  const waitlist: AcaWaitlistItem[] = [];
+
+  for (const [assistidoId, rows] of pendingByAssistido) {
+    // O próximo tratamento é o pendente de menor precedência; sem
+    // precedência definida, ele não compete pelo primeiro lugar.
+    const next = rows.reduce((best, row) =>
+      (row.precedencia ?? Number.MAX_SAFE_INTEGER) <
+      (best.precedencia ?? Number.MAX_SAFE_INTEGER)
+        ? row
+        : best,
+    );
+
+    if (!isAcolherComAmor(next.setor)) continue;
+
+    waitlist.push({
+      id: assistidoId,
+      nome_completo: names.get(assistidoId) ?? "—",
+      dataAtualizacao: next.data_atualizacao,
+    });
+  }
+
+  return waitlist.sort(
+    (a, b) =>
+      new Date(b.dataAtualizacao).getTime() -
+        new Date(a.dataAtualizacao).getTime() ||
+      a.nome_completo.localeCompare(b.nome_completo, "pt-BR"),
+  );
+}
+
 /** Desobsessão Infantil I and II. */
 export function isDesobsessaoInfantil(setor: string): boolean {
   return normalizeState(setor).startsWith(

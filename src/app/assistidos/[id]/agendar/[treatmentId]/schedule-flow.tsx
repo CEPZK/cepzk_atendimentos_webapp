@@ -32,6 +32,8 @@ export interface CalendarDay {
 
 interface ScheduleFlowProps {
   assistidoId: number;
+  /** `?from=...` of the list the volunteer came from, kept on the way back. */
+  backQuery: string;
   treatmentId: number;
   assistidoNome: string;
   horario: string;
@@ -49,6 +51,7 @@ type SessionProcedures = (number | null)[];
  */
 export function ScheduleFlow({
   assistidoId,
+  backQuery,
   treatmentId,
   assistidoNome,
   horario,
@@ -100,7 +103,7 @@ export function ScheduleFlow({
         return;
       }
 
-      router.push(`/assistidos/${assistidoId}`);
+      router.push(`/assistidos/${assistidoId}${backQuery}`);
       router.refresh();
     });
   }

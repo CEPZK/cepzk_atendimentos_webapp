@@ -163,6 +163,25 @@ export function ClipboardUserIcon({ className = "h-6 w-6" }: IconProps) {
   );
 }
 
+export function ClockIcon({ className = "h-6 w-6" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.6}
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+      />
+    </svg>
+  );
+}
+
 export function HeartIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
