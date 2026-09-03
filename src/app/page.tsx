@@ -74,7 +74,6 @@ export default async function HomePage() {
         "Consultar os assistidos com tratamento ativo da Desobsessão Infantil I.",
       icon: <ChildIcon />,
       isVisible:
-        isAdmin(volunteer) ||
         belongsToSector(sectors, DESOBSESSAO_INFANTIL_I_SECTOR) ||
         // Compatibilidade com setor legado "Desobsessão Infantil" (sem sufixo).
         sectors.some(
@@ -90,9 +89,7 @@ export default async function HomePage() {
       description:
         "Consultar os assistidos com tratamento ativo da Desobsessão Infantil II.",
       icon: <ChildIcon />,
-      isVisible:
-        isAdmin(volunteer) ||
-        belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
+      isVisible: belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
     },
     {
       key: "aca-lista-espera",

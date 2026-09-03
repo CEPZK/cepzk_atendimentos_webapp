@@ -5,7 +5,6 @@ import {
   loadVolunteerSectors,
   requireVolunteer,
 } from "@/lib/current-volunteer";
-import { isAdmin } from "@/lib/volunteer";
 import {
   buildDesobsessaoInfantilList,
   isDesobsessaoInfantilI,
@@ -42,13 +41,11 @@ interface TreatmentRow {
 export default async function DesobsessaoInfantilIPage() {
   const { supabase, volunteer } = await requireVolunteer();
 
-  // Only volunteers scheduled for Desobsessão Infantil I (and admins)
-  // see this list.
-  if (!isAdmin(volunteer)) {
-    const sectors = await loadVolunteerSectors(supabase, volunteer.id);
-    if (!sectors.some((s) => isDesobsessaoInfantilI(s.nome))) {
-      redirect("/");
-    }
+  // Apenas os voluntários escalados para a Desobsessão Infantil I veem
+  // esta lista (admins não).
+  const sectors = await loadVolunteerSectors(supabase, volunteer.id);
+  if (!sectors.some((s) => isDesobsessaoInfantilI(s.nome))) {
+    redirect("/");
   }
 
   // Pull every treatment ever tied to DI I (archived included, so the
