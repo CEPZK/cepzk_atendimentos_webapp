@@ -42,10 +42,16 @@ function one<T>(value: T | T[] | null | undefined): T | null {
 interface TreatmentRow {
   id: number;
   estado: string;
+  obs: string | null;
   assistido_id: number;
   atendimento_id: number | null;
   atendimento: AtendimentoRow | AtendimentoRow[] | null;
   assistido: { nome_completo: string } | { nome_completo: string }[] | null;
+  aca:
+    | { distonia: { nome: string } | { nome: string }[] | null }
+    | { distonia: { nome: string } | { nome: string }[] | null }[]
+    | null;
+  queixas: { queixa: { nome: string } | { nome: string }[] | null }[] | null;
 }
 
 interface SessionRow {
@@ -82,7 +88,7 @@ export default async function AgendarPage({
   const { data: treatment } = await supabase
     .from("cepzk_tratamento")
     .select(
-      `id, estado, assistido_id, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), assistido:cepzk_assistido (nome_completo)`,
+      `id, estado, obs, assistido_id, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), assistido:cepzk_assistido (nome_completo), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))`,
     )
     .eq("id", treatmentId)
     .maybeSingle<TreatmentRow>();
@@ -157,6 +163,17 @@ export default async function AgendarPage({
 
   const assistidoNome = one(treatment.assistido)?.nome_completo ?? "Assistido";
 
+  // Os dados do tratamento acompanham o agendamento: quem escolhe os
+  // procedimentos precisa ler a distonia e as queixas sem sair da tela.
+  const treatmentData = {
+    distonia: one(one(treatment.aca)?.distonia)?.nome ?? null,
+    queixas: (treatment.queixas ?? [])
+      .map((item) => one(item.queixa)?.nome)
+      .filter((nome): nome is string => Boolean(nome))
+      .sort((a, b) => a.localeCompare(b, "pt-BR")),
+    obs: treatment.obs,
+  };
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
@@ -182,6 +199,7 @@ export default async function AgendarPage({
           assistidoNome={assistidoNome}
           horario={atendimento.horario}
           days={days}
+          treatment={treatmentData}
           procedimentos={procedimentos ?? []}
         />
       ) : (
