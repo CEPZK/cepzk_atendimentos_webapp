@@ -9,6 +9,7 @@ import {
   findSimilarNames,
   canonicalState,
   treatmentStateAction,
+  ESTADO_EM_TRATAMENTO,
   TEA_DISTONIA,
   type Assistido,
   type SimilarAssistido,
@@ -21,6 +22,13 @@ import {
   type AtendimentoItem,
   type AtendimentoRow,
 } from "@/lib/atendimento";
+import {
+  matchesSchedule,
+  parseHorario,
+  sessionDates,
+  SESSION_COUNT,
+  SESSION_INTERVAL_DAYS,
+} from "@/lib/aca-agenda";
 
 export interface ActionResult {
   ok: boolean;
@@ -314,5 +322,215 @@ export async function updateTreatmentState(
 
   revalidatePath("/assistidos");
   revalidatePath(`/assistidos/${treatment.assistido_id}`);
+  // Quem sai de "pendente" sai da fila do Acolher com Amor.
+  revalidatePath("/acolher-com-amor/lista-de-espera");
   return { ok: true, message: `Situação alterada para ${allowed.nextState}.` };
+}
+
+// -----------------------------------------------------------------------------
+// Acolher com Amor — agenda
+// -----------------------------------------------------------------------------
+
+export interface ScheduleSessionInput {
+  /** Instant of the session, in ISO. */
+  data: string;
+  procedimentoIds: number[];
+}
+
+interface ScheduleInput {
+  treatmentId: number;
+  sessions: ScheduleSessionInput[];
+}
+
+/**
+ * Starts an Acolher com Amor treatment: writes the sessions (with their
+ * procedures) and moves the treatment to "em tratamento".
+ *
+ * The dates come from the screen but are checked here against the
+ * atendimento's own schedule — a session can only fall on a day the
+ * atendimento actually happens, at its hour, and the sessions must be
+ * `SESSION_INTERVAL_DAYS` apart. PostgREST has no transactions, so the
+ * sessions are removed again if anything after them fails.
+ */
+export async function scheduleAcaTreatment(
+  input: ScheduleInput,
+): Promise<ActionResult> {
+  const access = await requireAssistidoAccess();
+  const { supabase } = access;
+
+  const { data: treatment, error } = await supabase
+    .from("cepzk_tratamento")
+    .select(
+      `id, estado, assistido_id, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT})`,
+    )
+    .eq("id", input.treatmentId)
+    .maybeSingle<TreatmentStateRow>();
+
+  if (error || !treatment) {
+    return {
+      ok: false,
+      message: error
+        ? `Não foi possível ler o tratamento (${error.code}: ${error.message}).`
+        : "Tratamento não encontrado.",
+    };
+  }
+
+  if (!access.canManageTreatment(treatment.atendimento_id)) {
+    return { ok: false, message: "Este tratamento é de outro atendimento." };
+  }
+
+  const embedded = Array.isArray(treatment.atendimento)
+    ? treatment.atendimento[0]
+    : treatment.atendimento;
+  const atendimento = embedded ? mapAtendimento(embedded) : null;
+
+  // A mesma regra que desenha o botão "Iniciar Tratamento".
+  const allowed = atendimento
+    ? treatmentStateAction(atendimento.setor, treatment.estado)
+    : null;
+
+  if (!atendimento || !allowed || allowed.nextState !== ESTADO_EM_TRATAMENTO) {
+    return {
+      ok: false,
+      message: `Este tratamento não pode ser agendado (situação atual: ${treatment.estado}).`,
+    };
+  }
+
+  const schedule = parseHorario(atendimento.horario);
+  if (!schedule) {
+    return {
+      ok: false,
+      message: `Não foi possível ler o dia e a hora do atendimento ("${atendimento.horario}").`,
+    };
+  }
+
+  if (input.sessions.length !== SESSION_COUNT) {
+    return { ok: false, message: `Informe as ${SESSION_COUNT} sessões.` };
+  }
+
+  const dates = input.sessions.map((session) => new Date(session.data));
+  if (dates.some((date) => Number.isNaN(date.getTime()))) {
+    return { ok: false, message: "Data de sessão inválida." };
+  }
+
+  // As datas têm de ser as do próprio atendimento, espaçadas de 15 dias.
+  const expected = sessionDates(dates[0]);
+  const onSchedule = matchesSchedule(dates[0], schedule);
+
+  if (
+    !onSchedule ||
+    dates.some((date, index) => date.getTime() !== expected[index].getTime())
+  ) {
+    return {
+      ok: false,
+      message: `As sessões precisam cair em ${atendimento.horario}, a cada ${SESSION_INTERVAL_DAYS} dias.`,
+    };
+  }
+
+  const { data: procedimentos } = await supabase
+    .from("aca_procedimento")
+    .select("id")
+    .returns<{ id: number }[]>();
+  const validProcedimentos = new Set((procedimentos ?? []).map((p) => p.id));
+
+  for (const session of input.sessions) {
+    const ids = session.procedimentoIds;
+    if (new Set(ids).size !== ids.length) {
+      return {
+        ok: false,
+        message: "Um procedimento não pode se repetir na mesma sessão.",
+      };
+    }
+    if (ids.some((id) => !validProcedimentos.has(id))) {
+      return { ok: false, message: "Procedimento inválido." };
+    }
+  }
+
+  // Reagendar não é este fluxo: se já há sessões, algo saiu do lugar.
+  const { data: existing } = await supabase
+    .from("aca_sessao")
+    .select("id")
+    .eq("tratamento_id", treatment.id)
+    .returns<{ id: number }[]>();
+
+  if ((existing ?? []).length > 0) {
+    return { ok: false, message: "Este tratamento já tem sessões agendadas." };
+  }
+
+  const { data: created, error: sessaoError } = await supabase
+    .from("aca_sessao")
+    .insert(
+      input.sessions.map((session) => ({
+        tratamento_id: treatment.id,
+        data: new Date(session.data).toISOString(),
+      })),
+    )
+    .select("id, data")
+    .returns<{ id: number; data: string }[]>();
+
+  if (sessaoError || !created || created.length !== input.sessions.length) {
+    return {
+      ok: false,
+      message: `Não foi possível agendar as sessões (${sessaoError?.code}: ${sessaoError?.message}).`,
+    };
+  }
+
+  async function rollback(message: string): Promise<ActionResult> {
+    await supabase
+      .from("aca_sessao")
+      .delete()
+      .in("id", (created ?? []).map((row) => row.id));
+    return { ok: false, message };
+  }
+
+  const byInstant = new Map(
+    created.map((row) => [new Date(row.data).getTime(), row.id]),
+  );
+
+  const links = input.sessions.flatMap((session) => {
+    const sessaoId = byInstant.get(new Date(session.data).getTime());
+    return session.procedimentoIds.map((procedimentoId) => ({
+      sessao_id: sessaoId!,
+      procedimento_id: procedimentoId,
+    }));
+  });
+
+  if (links.some((link) => !link.sessao_id)) {
+    return rollback("Não foi possível associar os procedimentos às sessões.");
+  }
+
+  if (links.length > 0) {
+    const { error: linkError } = await supabase
+      .from("aca_sessao_procedimento")
+      .insert(links);
+
+    if (linkError) {
+      return rollback(
+        `Não foi possível registrar os procedimentos (${linkError.code}: ${linkError.message}).`,
+      );
+    }
+  }
+
+  const { error: updateError } = await supabase
+    .from("cepzk_tratamento")
+    .update({
+      estado: ESTADO_EM_TRATAMENTO,
+      data_atualizacao: new Date().toISOString(),
+    })
+    .eq("id", treatment.id);
+
+  if (updateError) {
+    return rollback(
+      `Não foi possível atualizar a situação (${updateError.code}: ${updateError.message}).`,
+    );
+  }
+
+  revalidatePath("/assistidos");
+  revalidatePath(`/assistidos/${treatment.assistido_id}`);
+  // Quem sai de "pendente" sai da fila do Acolher com Amor.
+  revalidatePath("/acolher-com-amor/lista-de-espera");
+  return {
+    ok: true,
+    message: `Tratamento agendado em ${SESSION_COUNT} sessões.`,
+  };
 }

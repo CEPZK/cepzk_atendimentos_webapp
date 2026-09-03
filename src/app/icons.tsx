@@ -38,6 +38,21 @@ export function ChevronRightIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function ChevronLeftIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+    </svg>
+  );
+}
+
 export function ArrowLeftIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
