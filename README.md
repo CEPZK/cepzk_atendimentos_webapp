@@ -79,6 +79,19 @@ Suporte a Turbopack do Serwist for experimental).
 > manualmente no Supabase (*Authentication → Users → Add user*, marcando
 > *Auto confirm user*), como documentado no backend.
 
+> ⚠️ As variáveis `NEXT_PUBLIC_*` são **embutidas no build** pelo Next.
+> Para o app não depender disso (um *redeploy* reaproveitando o build cache
+> gera um bundle sem elas), o servidor publica a URL e a anon key no HTML a
+> cada request (`src/app/supabase-env.tsx`) e o cliente prefere esses
+> valores. Ou seja: basta a variável existir no ambiente da Vercel.
+>
+> Detalhe histórico: antes disso, Se você
+> adicioná-las depois de um deploy, é preciso **redeployar** (*Deployments
+> → ⋯ → Redeploy*) para que passem a valer. Enquanto estiverem ausentes, o
+> app não quebra: todas as rotas levam ao `/login`, que exibe um aviso de
+> configuração pendente (antes disso, o proxy lançava exceção e a
+> aplicação inteira respondia `Internal Server Error`).
+
 ## Autenticação
 
 O acesso é **sem senha** e **somente por convite (invite-only)**:

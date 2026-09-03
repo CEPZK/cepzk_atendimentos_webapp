@@ -4,12 +4,20 @@ import { createClient } from "@/lib/supabase/server";
 import { isProfileComplete } from "@/lib/volunteer";
 import { CompleteProfileForm } from "./complete-profile-form";
 
+// These pages depend on the request cookies (session): never prerender
+// them, otherwise a build made without the Supabase credentials would bake
+// a permanent redirect into the output.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Complete seu cadastro",
 };
 
 export default async function CompleteProfilePage() {
   const supabase = await createClient();
+  if (!supabase) {
+    redirect("/login?error=config");
+  }
 
   const {
     data: { user },

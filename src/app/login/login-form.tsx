@@ -1,19 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import {
+  SupabaseNotConfiguredError,
+  isSupabaseConfigured,
+} from "@/lib/supabase/client";
 
 interface LoginFormProps {
   /** Where to go after signing in. */
   nextPath: string;
   /** Optional message shown at the top of the form. */
   errorMessage?: string | null;
+  /** `false` when the Supabase credentials are missing on the server. */
+  isConfigured?: boolean;
 }
 
-export function LoginForm({ nextPath, errorMessage = null }: LoginFormProps) {
+export function LoginForm({
+  nextPath,
+  errorMessage = null,
+  isConfigured = true,
+}: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // `isConfigured` only reflects the server; the bundle running in the
+  // browser may itself have been built without the credentials.
+  const isConfiguredInBrowser = useSyncExternalStore(
+    () => () => {},
+    () => isSupabaseConfigured(),
+    () => true,
+  );
+  const canSignIn = isConfigured && isConfiguredInBrowser;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,9 +66,12 @@ export function LoginForm({ nextPath, errorMessage = null }: LoginFormProps) {
         setIsSending(false);
         return;
       }
-    } catch {
+    } catch (cause) {
+      console.error("[cepzk] Sign-in request failed", cause);
       setError(
-        "Serviço temporariamente indisponível. Tente novamente em alguns instantes.",
+        cause instanceof SupabaseNotConfiguredError
+          ? "A plataforma não está configurada corretamente (credenciais do Supabase ausentes nesta versão do site). Avise um administrador."
+          : "Serviço temporariamente indisponível. Tente novamente em alguns instantes.",
       );
       setIsSending(false);
       return;
@@ -158,7 +179,7 @@ export function LoginForm({ nextPath, errorMessage = null }: LoginFormProps) {
 
         <button
           type="submit"
-          disabled={isSending}
+          disabled={isSending || !canSignIn}
           className="w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSending ? "Enviando..." : "Enviar link de acesso"}
