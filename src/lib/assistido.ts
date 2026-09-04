@@ -68,6 +68,27 @@ export interface TreatmentInput {
   obs: string;
 }
 
+/** An existing treatment, just enough to decide whether it blocks a repeat. */
+export interface ExistingTreatmentRow {
+  atendimento_id: number | null;
+  /** Set when the treatment was archived; null while it is active. */
+  data_arquivamento: string | null;
+}
+
+/**
+ * Whether a new treatment may repeat an atendimento the assistido already
+ * has — allowed only when every existing treatment of that atendimento is
+ * archived. Without any existing treatment for the atendimento it is
+ * trivially allowed (a fresh registration).
+ */
+export function canRepeatAtendimento(
+  existing: ExistingTreatmentRow[],
+  atendimentoId: number,
+): boolean {
+  const rows = existing.filter((row) => row.atendimento_id === atendimentoId);
+  return rows.every((row) => row.data_arquivamento !== null);
+}
+
 // -----------------------------------------------------------------------------
 // Treatment state
 //

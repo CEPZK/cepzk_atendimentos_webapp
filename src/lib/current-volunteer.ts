@@ -183,6 +183,31 @@ export const requireDepartment = cache(async (
 });
 
 /**
+ * Same as `requireDepartment`, but without the admin bypass: only who
+ * actually works in `department` gets through (admins included only when
+ * they are scheduled there). The Atendimento Fraterno's own screens use
+ * this — the admins keep the Lista de Assistidos instead.
+ *
+ * Like every other gate, it must be repeated inside the Server Actions
+ * of those screens.
+ */
+export const requireDepartmentOnly = cache(async (
+  department: string,
+): Promise<CurrentVolunteer> => {
+  const current = await requireVolunteer();
+
+  const sectors = await loadVolunteerSectors(
+    current.supabase,
+    current.volunteer.id,
+  );
+  if (!belongsToDepartment(sectors, department)) {
+    redirect("/");
+  }
+
+  return current;
+});
+
+/**
  * Same as `requireVolunteer`, but only for who works in `sector` —
  * admins always get through.
  *

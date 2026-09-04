@@ -36,7 +36,11 @@ export interface ActionResult {
   message?: string;
 }
 
-/** Everyone who works in Atendimento Fraterno keeps the list. */
+/**
+ * Everyone who works in Atendimento Fraterno (plus the admins) registers
+ * assistidos: the team on its own Cadastrar Assistido screen, the admins
+ * on the Lista de Assistidos.
+ */
 function requireAccess() {
   return requireDepartment(ATENDIMENTO_FRATERNO);
 }
@@ -245,6 +249,12 @@ export async function createAssistido(
   }
 
   revalidatePath("/assistidos");
+  revalidatePath(`/assistidos/${created.id}`);
+  // Os tratamentos pendentes criados entram na fila do Acolher com Amor.
+  revalidatePath("/acolher-com-amor/lista-de-espera");
+  // As listas da Desobsessão Infantil também dependem dos tratamentos.
+  revalidatePath("/desobsessao-infantil-i");
+  revalidatePath("/desobsessao-infantil-ii");
   return { ok: true, id: created.id, message: "Assistido cadastrado." };
 }
 

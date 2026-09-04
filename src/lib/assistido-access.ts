@@ -3,15 +3,12 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import {
-  belongsToDepartment,
   getSupabase,
   loadVolunteerAtendimentos,
-  loadVolunteerSectors,
   requireVolunteer,
   type CurrentVolunteer,
 } from "@/lib/current-volunteer";
 import { isAdmin } from "@/lib/volunteer";
-import { ATENDIMENTO_FRATERNO } from "@/lib/assistido";
 import type { AtendimentoItem } from "@/lib/atendimento";
 
 /**
@@ -19,15 +16,15 @@ import type { AtendimentoItem } from "@/lib/atendimento";
  *
  * Two levels:
  *
- * - **full** — admins and the Atendimento Fraterno, who interview and
- *   register everybody: every assistido, every treatment;
- * - **por escala** — the other teams: only the assistidos with a
+ * - **full** — admins only: every assistido, every treatment;
+ * - **por escala** — the teams: only the assistidos with a
  *   treatment in one of the atendimentos they are scheduled for, and of
  *   those assistidos only their own treatment is shown in full.
  *
- * The database still grants full access to every authenticated user
- * (RLS v1), so this is the real gate and has to be checked again inside
- * every Server Action.
+ * The Atendimento Fraterno no longer reads the assistidos here: their
+ * entry point is the Cadastrar Assistido screen. The database still
+ * grants full access to every authenticated user (RLS v1), so this is
+ * the real gate and has to be checked again inside every Server Action.
  */
 export interface AssistidoAccess extends CurrentVolunteer {
   /** Sees every assistido and every treatment. */
@@ -46,17 +43,16 @@ export const requireAssistidoAccess = cache(
     const supabase = await getSupabase();
     const { volunteer } = await requireVolunteer();
 
-    const [sectors, atendimentos] = await Promise.all([
-      loadVolunteerSectors(supabase, volunteer.id),
-      loadVolunteerAtendimentos(supabase, volunteer.id),
-    ]);
+    const atendimentos = await loadVolunteerAtendimentos(
+      supabase,
+      volunteer.id,
+    );
 
     const admin = isAdmin(volunteer);
-    const isFull = admin || belongsToDepartment(sectors, ATENDIMENTO_FRATERNO);
+    const isFull = admin;
     const atendimentoIds = atendimentos.map((atendimento) => atendimento.id);
 
-    // Neither the Atendimento Fraterno nor a single escala: there is
-    // nothing to show.
+    // Without a single escala (and not an admin): there is nothing to show.
     if (!isFull && atendimentoIds.length === 0) {
       redirect("/");
     }
@@ -72,7 +68,7 @@ export const requireAssistidoAccess = cache(
       canSeeTreatment: (atendimentoId) =>
         isFull || (atendimentoId !== null && scheduled.has(atendimentoId)),
       // Giving alta / starting the treatment belongs to the team that
-      // runs it — the Atendimento Fraterno reads, the admin can fix.
+      // runs it — the admin can fix.
       canManageTreatment: (atendimentoId) =>
         admin || (atendimentoId !== null && scheduled.has(atendimentoId)),
     };

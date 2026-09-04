@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assistidoInitials,
+  canRepeatAtendimento,
   compareNames,
   findSimilarNames,
   NAME_MATCH_THRESHOLD,
@@ -305,5 +306,29 @@ describe("the rest of the module", () => {
     expect(assistidoInitials("Maria de Lourdes Santos")).toBe("MS");
     expect(assistidoInitials("Ana")).toBe("A");
     expect(assistidoInitials("")).toBe("?");
+  });
+});
+
+describe("canRepeatAtendimento", () => {
+  const existing = [
+    { atendimento_id: 1, data_arquivamento: "2026-01-01T00:00:00.000Z" },
+    { atendimento_id: 1, data_arquivamento: "2026-02-01T00:00:00.000Z" },
+    { atendimento_id: 2, data_arquivamento: null },
+  ];
+
+  it("allows repeating an atendimento whose treatments are all archived", () => {
+    expect(canRepeatAtendimento(existing, 1)).toBe(true);
+  });
+
+  it("blocks repeating an atendimento that still has an active treatment", () => {
+    expect(canRepeatAtendimento(existing, 2)).toBe(false);
+  });
+
+  it("allows an atendimento the assistido never had", () => {
+    expect(canRepeatAtendimento(existing, 3)).toBe(true);
+  });
+
+  it("allows everything for a new assistido", () => {
+    expect(canRepeatAtendimento([], 1)).toBe(true);
   });
 });

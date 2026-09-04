@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireAssistidoAccess } from "@/lib/assistido-access";
 import {
   ATENDIMENTO_SELECT,
@@ -31,61 +32,36 @@ interface TreatmentStateRow {
 
 export default async function AssistidosPage() {
   const access = await requireAssistidoAccess();
-  const { supabase, isFull } = access;
 
-  // Filtra fora da lista os atendimentos da Desobsessão Infantil: esses
-  // voluntários têm seus próprios cards e não devem aparecer aqui.
-  const nonDIAtendimentos = access.atendimentos.filter(
-    (at) => !isDesobsessaoInfantil(at.setor),
-  );
-  const visibleAtendimentoIds = nonDIAtendimentos.map((at) => at.id);
+  // A lista geral é dos admins: as equipes veem seus assistidos pelas
+  // telas próprias, e o Atendimento Fraterno, pela tela de cadastro.
+  if (!access.isFull) {
+    redirect("/");
+  }
 
-  // Para voluntários exclusivamente da Desobsessão Infantil, sem nenhum
-  // outro atendimento, a lista geral fica vazia (os cards próprios na
-  // página inicial são a entrada correta). Não redirecionamos, pois o
-  // acesso ao detalhe do assistido precisa funcionar quando eles voltam
-  // pela seta do navegador.
-  const hasAnyVisible = isFull || visibleAtendimentoIds.length > 0;
-
-  // Quem é do Atendimento Fraterno (ou admin) vê todo mundo; os outros
-  // times veem apenas quem tem tratamento no atendimento da sua escala,
-  // excluindo a Desobsessão Infantil.
-  const treatmentsQuery = supabase
-    .from("cepzk_tratamento")
-    .select(
-      `assistido_id, estado, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), assistido:cepzk_assistido (id, nome_completo)`,
-    );
+  const { supabase } = access;
 
   const [everyone, treatments] = await Promise.all([
-    isFull
-      ? supabase
-          .from("cepzk_assistido")
-          .select("id, nome_completo")
-          .returns<Assistido[]>()
-      : Promise.resolve({ data: [] as Assistido[], error: null }),
-    !hasAnyVisible
-      ? Promise.resolve({ data: [] as TreatmentStateRow[], error: null })
-      : (isFull
-          ? treatmentsQuery
-          : treatmentsQuery.in("atendimento_id", visibleAtendimentoIds)
-        ).returns<TreatmentStateRow[]>(),
+    supabase
+      .from("cepzk_assistido")
+      .select("id, nome_completo")
+      .returns<Assistido[]>(),
+    supabase
+      .from("cepzk_tratamento")
+      .select(
+        `assistido_id, estado, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), assistido:cepzk_assistido (id, nome_completo)`,
+      )
+      .returns<TreatmentStateRow[]>(),
   ]);
 
   const error = everyone.error ?? treatments.error;
 
-  // Manda o tratamento mais pendente. Fora do Atendimento Fraterno a
-  // consulta acima só trouxe os tratamentos da escala do voluntário,
-  // excluindo Desobsessão Infantil, então o assistido só cai para o fim
-  // da lista quando tudo o que é dele já recebeu alta. Para os admins /
-  // Atendimento Fraterno, também excluímos da lista os tratamentos da
-  // Desobsessão Infantil para não confundir os voluntários que atendem
-  // outras equipes.
+  // Os tratamentos da Desobsessão Infantil ficam fora da lista geral:
+  // os voluntários dessas equipes usam os cards próprios.
   const treatmentRows = (treatments.data ?? []).filter((row) => {
-    if (isFull) {
-      const at = one(row.atendimento);
-      const mapped = at ? mapAtendimento(at) : null;
-      if (mapped && isDesobsessaoInfantil(mapped.setor)) return false;
-    }
+    const at = one(row.atendimento);
+    const mapped = at ? mapAtendimento(at) : null;
+    if (mapped && isDesobsessaoInfantil(mapped.setor)) return false;
     return true;
   });
 
@@ -118,7 +94,7 @@ export default async function AssistidosPage() {
           ).
         </p>
       ) : (
-        <AssistidosList assistidos={assistidos} canRegister={isFull} />
+        <AssistidosList assistidos={assistidos} canRegister={access.isFull} />
       )}
     </main>
   );
