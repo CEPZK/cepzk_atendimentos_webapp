@@ -19,7 +19,7 @@ export function WhatsAppGroupCard({ href }: WhatsAppGroupCardProps) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-green-300 hover:bg-green-50/40 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2"
+      className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-sky-300 hover:bg-sky-50/40 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
     >
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#25d366] text-white">
         <WhatsAppIcon className="h-7 w-7" />
