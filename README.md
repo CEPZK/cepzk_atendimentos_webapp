@@ -52,6 +52,18 @@ npm start
 O service worker é gerado apenas no build de produção
 (`public/sw.js`, ignorado pelo git).
 
+### 5. Rode os testes
+
+```bash
+npm test              # executa uma vez
+npm run test:watch    # reexecuta ao salvar
+```
+
+Cobrem a comparação de nomes por similaridade (`src/lib/assistido.ts`),
+usada no cadastro de assistidos. A pesquisa que definiu as regras, os
+limiares e as alternativas avaliadas está em
+[`docs/similaridade-de-nomes.md`](docs/similaridade-de-nomes.md).
+
 ## Deploy na Vercel
 
 O projeto já está pronto para deploy (o build usa webpack
@@ -139,6 +151,8 @@ e **telefone** são gravados direto na tabela.
 | `npm run build`  | Build de produção (gera o service worker)          |
 | `npm start`      | Serve o build de produção                          |
 | `npm run lint`   | ESLint                                             |
+| `npm test`       | Testes (Vitest), executados uma vez                |
+| `npm run test:watch` | Testes em modo *watch*                         |
 | `npm run icons`  | Regenera ícones PWA e favicon a partir do SVG      |
 
 ## Variáveis de ambiente

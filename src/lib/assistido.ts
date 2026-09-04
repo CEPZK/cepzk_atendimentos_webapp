@@ -417,9 +417,15 @@ export function buildDesobsessaoInfantilList(
 // -----------------------------------------------------------------------------
 // Name matching
 //
-// Registering someone twice is the mistake this screen exists to prevent,
-// so the check has to catch names that were typed differently — "Luca
-// Silva" must find "Lucas Silva" and "Silva".
+// Registering someone twice is the mistake this screen exists to prevent, so
+// the check has to catch the same name typed differently — "Luccas Silva" has
+// to find "Luca Silva" — while staying quiet about two people who merely share
+// a surname, which is how "João Silva" and "Lucas Silva" used to look alike.
+//
+// No single score over the whole string does both: the shared surname carries
+// the score, whatever the metric. Names are compared one by one instead — see
+// docs/similaridade-de-nomes.md, which measured this rule against every
+// alternative (metric by metric, library by library, and in the database).
 // -----------------------------------------------------------------------------
 
 /** Particles that carry no identity and would match everyone. */
@@ -452,96 +458,323 @@ export function normalizeName(value: string): string {
     .trim();
 }
 
+/** Names kept for display: accent-free, without particles. */
 function nameTokens(value: string): string[] {
   return normalizeName(value)
     .split(" ")
     .filter((token) => token && !NAME_PARTICLES.has(token));
 }
 
-function bigrams(value: string): string[] {
-  if (value.length < 2) return [value];
-  const pairs: string[] = [];
-  for (let i = 0; i < value.length - 1; i++) pairs.push(value.slice(i, i + 2));
-  return pairs;
+/** "Júnior" and friends tell generations apart, not people. */
+const NAME_GENERATIONS = new Set([
+  "junior",
+  "jr",
+  "filho",
+  "neto",
+  "segundo",
+  "terceiro",
+  "sobrinho",
+  "senior",
+]);
+
+/**
+ * Spellings Brazilian registries swap freely, folded into a single form:
+ * Thiago/Tiago, Wagner/Vagner, Souza/Sousa, Kleber/Cleber, Yara/Iara,
+ * Gisele/Giselle, Luccas/Lucas, Fabrício/Fabrizio, Cecília/Sesília.
+ *
+ * "x" is left alone on purpose — folding it into "s" would make "Alexandra"
+ * and "Alessandra" indistinguishable, and they are usually different people.
+ *
+ * The order matters: "ph" has to be read before the silent "h" goes away, and
+ * the "c" that sounds like "s" before the doubled letters are collapsed.
+ */
+const NAME_FOLDINGS: readonly [pattern: RegExp, replacement: string][] = [
+  [/ph/g, "f"],
+  [/h/g, ""],
+  [/y/g, "i"],
+  [/w/g, "v"],
+  [/k/g, "c"],
+  [/z/g, "s"],
+  [/c(?=[ei])/g, "s"],
+  [/([a-z])\1/g, "$1"],
+];
+
+/**
+ * How close two names of different lengths have to be to count as the same
+ * one. Measured over the pairs in docs/similaridade-de-nomes.md: below it
+ * "Luca" drifts into "Luciana", above it "Luccas" stops finding "Luca".
+ */
+export const NAME_MATCH_THRESHOLD = 0.86;
+
+/** Two neighbour letters typed in the wrong order: clearly the same name. */
+const TRANSPOSITION_SCORE = 0.95;
+
+/** A letter swapped for one of the other kind: a slip, not another name. */
+const SLIP_SCORE = 0.9;
+
+/** An initial ("J.") only says what the name starts with: weaker evidence. */
+const INITIAL_SCORE = 0.5;
+
+const VOWELS = new Set(["a", "e", "i", "o", "u"]);
+
+/** One name of a full name, as it is read and as it is compared. */
+interface NameToken {
+  /** Accent-free and lowercase, for showing on screen. */
+  written: string;
+  /** `written` with the spelling variants folded, for comparing. */
+  folded: string;
 }
 
-/** Sørensen–Dice coefficient over letter pairs: 0 (nothing) to 1 (equal). */
-function dice(a: string, b: string): number {
-  if (!a || !b) return 0;
-  if (a === b) return 1;
+/** The names that identify someone: particles and generation suffixes out. */
+function compareTokens(value: string): NameToken[] {
+  return (
+    normalizeName(value)
+      .split(" ")
+      .filter(
+        (token) =>
+          token && !NAME_PARTICLES.has(token) && !NAME_GENERATIONS.has(token),
+      )
+      .map((written) => ({
+        written,
+        folded: NAME_FOLDINGS.reduce(
+          (folded, [pattern, replacement]) =>
+            folded.replace(pattern, replacement),
+          written,
+        ),
+      }))
+      // Folding a name down to nothing ("H") leaves nothing to compare.
+      .filter((token) => token.folded.length > 0)
+  );
+}
 
-  const left = bigrams(a);
-  const right = new Map<string, number>();
-  for (const pair of bigrams(b)) {
-    right.set(pair, (right.get(pair) ?? 0) + 1);
-  }
+/** The letters two words share in order: their longest common subsequence. */
+function sharedLetters(a: string, b: string): number {
+  let previous = new Array<number>(b.length + 1).fill(0);
+  let current = new Array<number>(b.length + 1).fill(0);
 
-  let shared = 0;
-  for (const pair of left) {
-    const available = right.get(pair) ?? 0;
-    if (available > 0) {
-      shared++;
-      right.set(pair, available - 1);
+  for (let i = 1; i <= a.length; i++) {
+    current[0] = 0;
+    for (let j = 1; j <= b.length; j++) {
+      current[j] =
+        a[i - 1] === b[j - 1]
+          ? previous[j - 1] + 1
+          : Math.max(previous[j], current[j - 1]);
     }
+    [previous, current] = [current, previous];
   }
 
-  return (2 * shared) / (left.length + bigrams(b).length);
-}
-
-function bestMatch(token: string, others: string[]): number {
-  return others.reduce((best, other) => Math.max(best, dice(token, other)), 0);
+  return previous[b.length];
 }
 
 /**
- * How much two names look alike, from 0 to 1.
+ * Similarity from 0 to 1 counting only letters added or dropped, so that a
+ * replaced letter costs both and barely moves the score.
  *
- * Compares name by name (so word order and missing names do not matter)
- * and the whole string (so a single long name still counts).
+ * That is the point: Brazilian spelling variants add or drop letters
+ * ("Luccas"/"Luca", "Aparecida"/"Apparecida"), while a different name usually
+ * replaces them ("Eduardo"/"Eduarda", "Lima"/"Lira").
  */
-export function nameSimilarity(query: string, candidate: string): number {
-  const queryTokens = nameTokens(query);
-  const candidateTokens = nameTokens(candidate);
-  if (queryTokens.length === 0 || candidateTokens.length === 0) return 0;
+function indelSimilarity(a: string, b: string): number {
+  if (!a.length || !b.length) return 0;
+  return (2 * sharedLetters(a, b)) / (a.length + b.length);
+}
 
-  const fromQuery =
-    queryTokens.reduce(
-      (sum, token) => sum + bestMatch(token, candidateTokens),
-      0,
-    ) / queryTokens.length;
+/** The positions where two words of the same length differ. */
+function differingPositions(a: string, b: string): number[] {
+  const positions: number[] = [];
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) positions.push(i);
+  }
+  return positions;
+}
 
-  const fromCandidate =
-    candidateTokens.reduce(
-      (sum, token) => sum + bestMatch(token, queryTokens),
-      0,
-    ) / candidateTokens.length;
+/**
+ * How alike two single names are, from 0 (not the same name) to 1 (the same
+ * spelling).
+ *
+ * Words of the same length cannot have gained or lost a letter, so a
+ * difference there is either a slip of the fingers or another name:
+ *
+ * - two neighbours in the wrong order ("Nogueira"/"Nogreira") is a slip;
+ * - one letter swapped for one of the other kind, vowel for consonant
+ *   ("Sônia"/"Sonja"), is a slip;
+ * - a vowel for a vowel is a gender or a different name ("Eduardo"/"Eduarda",
+ *   "Mariana"/"Mariane"), and a consonant for a consonant is a different
+ *   surname ("Lima"/"Lira", "Alessandra"/"Alexandra").
+ */
+function tokenSimilarity(a: string, b: string): number {
+  if (a === b) return 1;
 
-  const whole = dice(
-    queryTokens.join(""),
-    candidateTokens.join(""),
+  if (a.length === 1 || b.length === 1) {
+    const initial = a.length === 1 ? a : b;
+    const name = a.length === 1 ? b : a;
+    return name.startsWith(initial) ? INITIAL_SCORE : 0;
+  }
+
+  if (a.length !== b.length) {
+    const similarity = indelSimilarity(a, b);
+    return similarity >= NAME_MATCH_THRESHOLD ? similarity : 0;
+  }
+
+  const positions = differingPositions(a, b);
+  if (positions.length === 2 && positions[1] === positions[0] + 1) {
+    const swapped =
+      a[positions[0]] === b[positions[1]] &&
+      a[positions[1]] === b[positions[0]];
+    if (swapped) return TRANSPOSITION_SCORE;
+  }
+
+  if (positions.length === 1) {
+    const from = a[positions[0]];
+    const to = b[positions[0]];
+    if (VOWELS.has(from) !== VOWELS.has(to)) return SLIP_SCORE;
+  }
+
+  return 0;
+}
+
+/** A name that is spelled differently on each side. */
+export interface NameDifference {
+  /** As the volunteer typed it. */
+  typed: string;
+  /** As it is registered. */
+  registered: string;
+}
+
+export interface NameComparison {
+  /** Whether both names are the same person, spelled differently. */
+  similar: boolean;
+  /** 0 to 1, how close the paired names are — the list is ordered by it. */
+  score: number;
+  /** Names spelled differently; empty when only accents or particles are. */
+  differences: NameDifference[];
+}
+
+/** "luccas" reads better as "Luccas" inside a sentence. */
+function sentenceCase(token: string): string {
+  return token.charAt(0).toUpperCase() + token.slice(1);
+}
+
+/**
+ * Whether the name being typed and a registered name are the same person.
+ *
+ * Every name of one side needs a partner on the other, and the first name and
+ * the last surname need one in their own place: sharing a surname is not
+ * enough ("João Silva"/"Lucas Silva"), and neither is sharing a first name
+ * ("Ana Paula Ferreira"/"Ana Luiza Ferreira").
+ */
+export function compareNames(
+  typed: string,
+  registered: string,
+): NameComparison {
+  const typedTokens = compareTokens(typed);
+  const registeredTokens = compareTokens(registered);
+  const different: NameComparison = {
+    similar: false,
+    score: 0,
+    differences: [],
+  };
+
+  if (!typedTokens.length || !registeredTokens.length) return different;
+
+  const taken = new Array<boolean>(registeredTokens.length).fill(false);
+  const scores: number[] = [];
+  const differences: NameDifference[] = [];
+
+  for (const token of typedTokens) {
+    let best = 0;
+    let partner = -1;
+
+    for (let i = 0; i < registeredTokens.length; i++) {
+      if (taken[i]) continue;
+      const score = tokenSimilarity(token.folded, registeredTokens[i].folded);
+      if (score > best) {
+        best = score;
+        partner = i;
+      }
+    }
+
+    // A name nobody answers to belongs to someone else.
+    if (partner < 0) return different;
+
+    taken[partner] = true;
+    scores.push(best);
+
+    const matched = registeredTokens[partner];
+    if (token.written !== matched.written) {
+      differences.push({ typed: token.written, registered: matched.written });
+    }
+  }
+
+  const comparison = {
+    similar: true,
+    score: scores.reduce((total, score) => total + score, 0) / scores.length,
+    differences,
+  };
+
+  // With the same number of names on both sides, every name found a partner
+  // and the order they were typed in does not matter — "Silva João" is "João
+  // Silva" written backwards. With a different number, the pairing above only
+  // says the shorter side is contained in the longer one, so the two names
+  // that carry the identity have to match where they are: without that, "Ana"
+  // would find every "Ana …" in the registry.
+  if (typedTokens.length === registeredTokens.length) return comparison;
+
+  const firstName = tokenSimilarity(
+    typedTokens[0].folded,
+    registeredTokens[0].folded,
+  );
+  const surname = tokenSimilarity(
+    typedTokens[typedTokens.length - 1].folded,
+    registeredTokens[registeredTokens.length - 1].folded,
   );
 
-  return 0.45 * fromQuery + 0.25 * fromCandidate + 0.3 * whole;
+  return firstName && surname ? comparison : different;
 }
 
-/** Below this the names have nothing meaningful in common. */
-export const SIMILARITY_THRESHOLD = 0.35;
+/** Why a registered name came up, in the words the volunteer reads. */
+export function similarityReason(comparison: NameComparison): string {
+  if (!comparison.differences.length) {
+    return "Mesmo nome, com outros acentos, partículas ou sufixos.";
+  }
+
+  const spelled = comparison.differences
+    .map(
+      (difference) =>
+        `“${sentenceCase(difference.typed)}” e “${sentenceCase(
+          difference.registered,
+        )}”`,
+    )
+    .join(", ");
+
+  return `Grafia parecida em ${spelled}.`;
+}
 
 export interface SimilarAssistido extends Assistido {
+  /** 0 to 1, how close the names are — the review list is ordered by it. */
   score: number;
+  /** Why this name came up, to be read next to it. */
+  reason: string;
 }
 
-/** The registered names that look like `query`, best match first. */
+/** The registered names that look like `query`, closest first. */
 export function findSimilarNames(
   query: string,
   candidates: Assistido[],
   limit = 8,
 ): SimilarAssistido[] {
   return candidates
-    .map((candidate) => ({
-      ...candidate,
-      score: nameSimilarity(query, candidate.nome_completo),
-    }))
-    .filter((candidate) => candidate.score >= SIMILARITY_THRESHOLD)
+    .flatMap((candidate) => {
+      const comparison = compareNames(query, candidate.nome_completo);
+      if (!comparison.similar) return [];
+      return [
+        {
+          ...candidate,
+          score: comparison.score,
+          reason: similarityReason(comparison),
+        },
+      ];
+    })
     .sort(
       (a, b) =>
         b.score - a.score ||
