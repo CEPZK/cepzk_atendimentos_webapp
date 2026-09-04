@@ -166,8 +166,13 @@ export function NewAssistidoFlow({
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
                     {assistidoInitials(match.nome_completo)}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
-                    {match.nome_completo}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-slate-900">
+                      {match.nome_completo}
+                    </span>
+                    <span className="block truncate text-xs text-slate-500">
+                      {match.reason}
+                    </span>
                   </span>
                   <ChevronRightIcon className="h-5 w-5 shrink-0 text-slate-300" />
                 </Link>

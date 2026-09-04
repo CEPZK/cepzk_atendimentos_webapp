@@ -47,8 +47,13 @@ function requireAccess() {
  * The comparison runs here and not in the database: the assistidos table
  * is small enough to read in one go, and this keeps the matching rules
  * (see `@/lib/assistido`) in the application, where they can be tuned
- * without a migration — Postgres similarity would need the `pg_trgm`
- * extension enabled in the project.
+ * without a migration — and under test, which is where the thresholds
+ * come from.
+ *
+ * `pg_trgm` is available in the Supabase project and would take the whole
+ * table off this action, but only as a pre-filter: trigram similarity on
+ * its own still reads "Antonio Pereira" and "Antonio Peres" as the same
+ * person. Both were measured in docs/similaridade-de-nomes.md.
  */
 export async function findSimilarAssistidos(
   nomeCompleto: string,
