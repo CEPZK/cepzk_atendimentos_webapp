@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   WEEKDAY_INITIALS,
   buildNameColors,
@@ -10,7 +10,7 @@ import {
   monthOf,
   nameColor,
   shiftMonth,
-  shortName,
+  todayKey,
 } from "@/lib/aca-agenda";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/app/icons";
 
@@ -61,9 +61,37 @@ export function AcaMonthCalendar({
     ? monthOf(dayKey(days[days.length - 1].iso))
     : null;
 
-  const [cursor, setCursor] = useState(
-    first ?? { year: new Date().getFullYear(), month: new Date().getMonth() + 1 },
-  );
+  // O dia corrente na hora da casa, o mesmo critério que as telas usam
+  // para dizer que uma sessão é "hoje".
+  const [today, setToday] = useState(() => todayKey());
+
+  // A tela pode ficar aberta na virada do dia (e o HTML vem do servidor):
+  // relê o dia da casa no cliente e agenda a próxima virada.
+  useEffect(() => {
+    const tick = () => setToday(todayKey());
+    tick();
+    const timer = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  // Abre no mês corrente quando ele tem dias de atendimento, para que o
+  // destaque de hoje já esteja à vista.
+  const [cursor, setCursor] = useState(() => {
+    const fallback = first ?? {
+      year: new Date().getFullYear(),
+      month: new Date().getMonth() + 1,
+    };
+    if (!first || !last) return fallback;
+    const current = monthOf(todayKey());
+    const index = current.year * 12 + current.month;
+    if (
+      index >= first.year * 12 + first.month &&
+      index <= last.year * 12 + last.month
+    ) {
+      return current;
+    }
+    return fallback;
+  });
 
   const grid = useMemo(() => monthGrid(cursor.year, cursor.month), [cursor]);
 
@@ -157,11 +185,21 @@ export function AcaMonthCalendar({
             // sábados de outubro, e obrigar a virar o mês para clicar
             // neles é atrito puro.
             const available = Boolean(day);
+            // O dia corrente fica marcado em toda a grade, tenha ou não
+            // atendimento: é a referência que situa o voluntário no mês.
+            const isToday = cell.key === today;
 
             return (
               <div
                 key={cell.key}
-                className="min-h-[74px] border-b border-r border-slate-100 p-1 last:border-r-0 sm:min-h-[92px]"
+                aria-current={isToday ? "date" : undefined}
+                className={`relative min-h-[74px] border-b border-r border-slate-100 p-1 last:border-r-0 sm:min-h-[92px] ${
+                  // Hoje é marcado só no contorno da célula, na cor do
+                  // tema: nada de fundo colorido competindo com os chips.
+                  isToday
+                    ? "z-10 rounded-md ring-2 ring-inset ring-teal-600"
+                    : ""
+                }`}
               >
                 {available ? (
                   <button
@@ -198,7 +236,7 @@ export function AcaMonthCalendar({
                               (colors.get(nome) ?? nameColor(nome)).chip
                             } ${cell.inMonth ? "" : "opacity-60"}`}
                           >
-                            {shortName(nome)}
+                            {nome}
                           </span>
                         ))}
                         {day!.assistidos.length > 4 && (
@@ -213,7 +251,11 @@ export function AcaMonthCalendar({
                   <div className="p-1.5">
                     <span
                       className={`text-sm ${
-                        cell.inMonth ? "text-slate-400" : "text-slate-300"
+                        isToday
+                          ? "font-semibold text-teal-700"
+                          : cell.inMonth
+                            ? "text-slate-400"
+                            : "text-slate-300"
                       }`}
                     >
                       {cell.day}
