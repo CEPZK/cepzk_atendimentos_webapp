@@ -141,7 +141,7 @@ export function TreatmentSessionsEditor({
                   {index + 1}ª sessão — {formatLongDate(session.data)}
                 </p>
                 {isToday && (
-                  <span className="rounded-full bg-sky-700 px-2.5 py-0.5 text-xs font-semibold text-white">
+                  <span className="rounded-full bg-sky-600 px-2.5 py-0.5 text-xs font-semibold text-white">
                     Hoje
                   </span>
                 )}
@@ -173,7 +173,7 @@ export function TreatmentSessionsEditor({
         type="button"
         onClick={save}
         disabled={isPending}
-        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {isPending ? "Salvando..." : "Salvar"}
       </button>

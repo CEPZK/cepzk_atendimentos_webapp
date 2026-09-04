@@ -21,7 +21,7 @@ import {
 type Step = "nome" | "similares" | "cadastro";
 
 const PRIMARY_BUTTON =
-  "w-full rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 const SECONDARY_BUTTON =
   "w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
@@ -151,7 +151,7 @@ export function NewAssistidoFlow({
         </h1>
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="rounded-xl border-2 border-sky-600 bg-sky-50 px-4 py-3 text-base font-semibold text-sky-900">
+          <p className="rounded-xl border-2 border-sky-500 bg-sky-50 px-4 py-3 text-base font-semibold text-sky-800">
             {nome}
           </p>
 

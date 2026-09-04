@@ -38,7 +38,7 @@ export default async function RelatoriosPage() {
 
       <Link
         href="/acolher-com-amor/relatorios/novo"
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
       >
         <PlusIcon className="h-5 w-5" />
         Registrar Relatório

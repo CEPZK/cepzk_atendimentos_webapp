@@ -141,7 +141,7 @@ export function ScheduleEditor({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-sky-700 px-4 py-2.5 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-sky-600 px-4 py-2.5 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <PlusIcon className="h-5 w-5" />
           {isPending ? "Salvando..." : "Associar a uma escala"}

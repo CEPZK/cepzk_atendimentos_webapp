@@ -29,7 +29,7 @@ export default function AppError({
       <button
         type="button"
         onClick={reset}
-        className="rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-800"
+        className="rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700"
       >
         Tentar novamente
       </button>
