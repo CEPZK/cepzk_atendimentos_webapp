@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ScheduleEntry } from "@/lib/volunteer";
 import { atendimentoLabel, type AtendimentoItem } from "@/lib/atendimento";
-import { CalendarIcon, PlusIcon, TrashIcon } from "@/app/icons";
+import { CalendarHeartIcon, PlusIcon, TrashIcon } from "@/app/icons";
 import { addScheduleEntry, removeScheduleEntry } from "../actions";
 
 export function ScheduleEditor({
@@ -52,12 +52,12 @@ export function ScheduleEditor({
   }
 
   const selectClass =
-    "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30";
+    "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30";
 
   return (
     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
-        <CalendarIcon className="h-5 w-5 text-teal-700" />
+        <CalendarHeartIcon className="h-5 w-5 text-sky-700" />
         Escalas
       </h2>
       <p className="mt-1 text-sm text-slate-500">
@@ -130,7 +130,7 @@ export function ScheduleEditor({
             role="status"
             className={`rounded-lg border px-4 py-3 text-sm ${
               feedback.ok
-                ? "border-teal-200 bg-teal-50 text-teal-800"
+                ? "border-sky-200 bg-sky-50 text-sky-800"
                 : "border-red-200 bg-red-50 text-red-700"
             }`}
           >
@@ -141,7 +141,7 @@ export function ScheduleEditor({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-teal-700 px-4 py-2.5 text-sm font-semibold text-teal-700 transition-colors hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-sky-600 px-4 py-2.5 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <PlusIcon className="h-5 w-5" />
           {isPending ? "Salvando..." : "Associar a uma escala"}

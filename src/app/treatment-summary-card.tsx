@@ -1,4 +1,4 @@
-import { HeartIcon } from "@/app/icons";
+import { PuzzlePieceIcon } from "@/app/icons";
 
 /** The treatment being scheduled/edited, as recorded at the registration. */
 export interface TreatmentSummary {
@@ -32,7 +32,7 @@ export function TreatmentSummaryCard({
 
       {treatment.distonia && (
         <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-          <HeartIcon className="h-4 w-4 shrink-0 text-teal-700" />
+          <PuzzlePieceIcon className="h-4 w-4 shrink-0 text-sky-700" />
           <span>
             <span className="text-slate-500">Distonia relatada: </span>
             {treatment.distonia}
@@ -47,7 +47,7 @@ export function TreatmentSummaryCard({
             {treatment.queixas.map((queixa) => (
               <li
                 key={queixa}
-                className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
+                className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
               >
                 {queixa}
               </li>

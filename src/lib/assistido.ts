@@ -109,11 +109,14 @@ export const TREATMENT_STATE_ORDER = [
   ESTADO_EXPIRADO,
 ] as const;
 
-/** Tailwind classes used on the Desobsessão Infantil status chips. */
+/**
+ * Tailwind classes of the state chips, in pastel tones: pendente is
+ * yellow, em tratamento is blue, alta is green and expirado is red.
+ */
 export const TREATMENT_STATE_COLORS: Record<string, string> = {
-  [ESTADO_PENDENTE]: "bg-amber-100 text-amber-800",
+  [ESTADO_PENDENTE]: "bg-yellow-100 text-yellow-800",
   [ESTADO_EM_TRATAMENTO]: "bg-blue-100 text-blue-800",
-  [ESTADO_ALTA]: "bg-emerald-100 text-emerald-800",
+  [ESTADO_ALTA]: "bg-green-100 text-green-800",
   [ESTADO_EXPIRADO]: "bg-red-100 text-red-800",
 };
 
@@ -153,14 +156,10 @@ export function treatmentStateRank(estado: string | null | undefined): number {
     : position;
 }
 
-/** "Situação: pendente" — the state as recorded in `cepzk_tratamento`. */
-export function treatmentStateLabel(estado: string): string {
-  return `Situação: ${estado}`;
-}
-
 /**
- * The state as displayed on a chip — capitalized first letter, e.g.
- * "pendente" → "Pendente", "em tratamento" → "Em tratamento".
+ * The state as displayed on a chip — just the state, with a capitalized
+ * first letter: "pendente" → "Pendente", "em tratamento" → "Em
+ * tratamento". The word "Situação" is not repeated on every chip.
  */
 export function treatmentStateChip(estado: string): string {
   if (!estado) return estado;

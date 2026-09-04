@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-      <p className="text-5xl font-semibold text-teal-700">404</p>
+      <p className="text-5xl font-semibold text-sky-700">404</p>
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
         Página não encontrada
       </h1>
@@ -12,7 +12,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800"
+        className="rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700"
       >
         Voltar ao início
       </Link>

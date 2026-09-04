@@ -29,9 +29,9 @@ export function WaitlistList({
           <li key={assistido.id}>
             <Link
               href={`/assistidos/${assistido.id}?from=aca-waitlist`}
-              className="flex items-center gap-3 p-4 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-600"
+              className="flex items-center gap-3 p-4 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky-600"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-700">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-semibold text-sky-700">
                 {assistidoInitials(assistido.nome_completo)}
               </span>
               <span className="min-w-0 flex-1">

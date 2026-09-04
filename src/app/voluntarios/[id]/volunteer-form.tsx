@@ -11,7 +11,7 @@ import {
 import { updateVolunteer } from "../actions";
 
 const FIELD_CLASS =
-  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30 disabled:bg-slate-50 disabled:text-slate-500";
+  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30 disabled:bg-slate-50 disabled:text-slate-500";
 
 export function VolunteerForm({
   volunteer,
@@ -143,7 +143,7 @@ export function VolunteerForm({
             role="status"
             className={`rounded-lg border px-4 py-3 text-sm ${
               feedback.ok
-                ? "border-teal-200 bg-teal-50 text-teal-800"
+                ? "border-sky-200 bg-sky-50 text-sky-800"
                 : "border-red-200 bg-red-50 text-red-700"
             }`}
           >
@@ -154,7 +154,7 @@ export function VolunteerForm({
         <button
           type="submit"
           disabled={isPending || !isDirty}
-          className="w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? "Salvando..." : "Salvar alterações"}
         </button>

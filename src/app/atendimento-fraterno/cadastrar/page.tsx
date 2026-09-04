@@ -49,7 +49,7 @@ export default async function CadastrarAssistidoPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-teal-700"
+        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-sky-700"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         Início

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useSyncExternalStore } from "react";
 import {
   SupabaseNotConfiguredError,
@@ -84,9 +85,9 @@ export function LoginForm({
   if (isSent) {
     return (
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-teal-50">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-50">
           <svg
-            className="h-6 w-6 text-teal-700"
+            className="h-6 w-6 text-sky-700"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -111,7 +112,7 @@ export function LoginForm({
         <button
           type="button"
           onClick={() => setIsSent(false)}
-          className="mt-6 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+          className="mt-6 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
         >
           Reenviar link
         </button>
@@ -122,16 +123,14 @@ export function LoginForm({
   return (
     <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-700">
-          <svg
-            className="h-6 w-6 text-white"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001z" />
-          </svg>
-        </div>
+        <Image
+          src="/icons/cepzk-round-logo.png"
+          alt=""
+          width={44}
+          height={44}
+          className="h-11 w-11 shrink-0"
+          priority
+        />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Entrar
@@ -173,14 +172,14 @@ export function LoginForm({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="voce@exemplo.com"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30"
           />
         </div>
 
         <button
           type="submit"
           disabled={isSending || !canSignIn}
-          className="w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSending ? "Enviando..." : "Enviar link de acesso"}
         </button>

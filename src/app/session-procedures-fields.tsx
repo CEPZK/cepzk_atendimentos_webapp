@@ -44,7 +44,7 @@ export function SessionProceduresFields({
                 ),
               )
             }
-            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30"
           >
             <option value="">Selecione o procedimento</option>
             {procedimentos
@@ -76,7 +76,7 @@ export function SessionProceduresFields({
         <button
           type="button"
           onClick={() => onChange([...value, null])}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-700 transition-colors hover:text-teal-800"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-700 transition-colors hover:text-sky-800"
         >
           <PlusIcon className="h-4 w-4" />
           Adicionar procedimento
