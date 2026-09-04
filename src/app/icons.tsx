@@ -200,3 +200,23 @@ export function HeartIcon({ className = "h-5 w-5" }: IconProps) {
     </svg>
   );
 }
+
+export function ChildIcon({ className = "h-6 w-6" }: IconProps) {
+  // Simple child icon — head + body, reminiscent of an infant/child profile.
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.6}
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 8.25a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.25 13.5c.35-2.78 2.54-4.5 5.25-4.5s4.9 1.72 5.25 4.5M9.75 11.25l-2.25 3m9-3 2.25 3M9 10.5h6"
+      />
+    </svg>
+  );
+}
