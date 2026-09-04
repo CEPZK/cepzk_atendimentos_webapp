@@ -161,6 +161,7 @@ e **telefone** são gravados direto na tabela.
 | ------------------------- | ----------- | -------------------------------------- |
 | `NEXT_PUBLIC_SUPABASE_URL`| Sim         | URL do projeto Supabase                |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Sim   | Chave pública (anon) do projeto        |
+| `NEXT_PUBLIC_WHATSAPP_GROUP_LINK` | Não  | Link de convite do grupo de WhatsApp, exibido como botão na tela inicial (`https://chat.whatsapp.com/...`). Sem ele (ou se for inválido), o botão fica oculto. |
 
 Veja `.env.example`.
 

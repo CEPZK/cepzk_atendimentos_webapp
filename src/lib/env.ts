@@ -56,3 +56,33 @@ export function warnSupabaseNotConfigured(): void {
       "(the values are inlined at build time).",
   );
 }
+
+/**
+ * Optional WhatsApp group invite link shown on the home screen.
+ *
+ * Any person with the invite link can open the group preview and join,
+ * even without being a member — the group just needs link invites
+ * enabled (default) and the invite must not have been revoked.
+ *
+ * Returns `null` when unset or invalid, so the app keeps working without
+ * the button (the home screen simply hides it).
+ */
+export function getWhatsAppGroupLink(): string | null {
+  const value = process.env.NEXT_PUBLIC_WHATSAPP_GROUP_LINK?.trim();
+  if (!value) return null;
+
+  const isValid =
+    /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+$/u.test(value);
+  if (!isValid) {
+    console.error(
+      "[cepzk] NEXT_PUBLIC_WHATSAPP_GROUP_LINK is not a valid WhatsApp " +
+        "group invite link (expected https://chat.whatsapp.com/<code>). " +
+        "The home screen button will be hidden. " +
+        "How to get it: WhatsApp → open the group → Group info → " +
+        "Invite via link → Copy link.",
+    );
+    return null;
+  }
+
+  return value;
+}

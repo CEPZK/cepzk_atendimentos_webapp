@@ -13,6 +13,8 @@ import {
   DESOBSESSAO_INFANTIL_II_SECTOR,
 } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
+import { WhatsAppGroupCard } from "@/app/whatsapp-group-card";
+import { getWhatsAppGroupLink } from "@/lib/env";
 import {
   CalendarIcon,
   ChildIcon,
@@ -36,6 +38,7 @@ export default async function HomePage() {
   // Sectors the volunteer is scheduled for: the cards are released per
   // department, so the home screen needs them to decide what to show.
   const sectors = await loadVolunteerSectors(supabase, volunteer.id);
+  const whatsappGroupLink = getWhatsAppGroupLink();
 
   const cards = [
     {
@@ -176,6 +179,15 @@ export default async function HomePage() {
           </p>
         )}
       </section>
+
+      {whatsappGroupLink ? (
+        <section className="mt-8">
+          <h2 className="text-sm font-medium text-slate-500">Comunicação</h2>
+          <div className="mt-3 grid gap-3">
+            <WhatsAppGroupCard href={whatsappGroupLink} />
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }
