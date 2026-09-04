@@ -7,7 +7,8 @@ import {
   ESTADO_EM_TRATAMENTO,
   isAcolherComAmor,
   treatmentStateAction,
-  treatmentStateLabel,
+  treatmentStateChip,
+  treatmentStateColorClass,
   treatmentStateRank,
   type Assistido,
 } from "@/lib/assistido";
@@ -17,7 +18,7 @@ import {
   ATENDIMENTO_SELECT,
   type AtendimentoRow,
 } from "@/lib/atendimento";
-import { ArrowLeftIcon, HeartIcon } from "@/app/icons";
+import { ArrowLeftIcon, PuzzlePieceIcon } from "@/app/icons";
 import { TreatmentStateButton } from "./treatment-state-button";
 
 export const dynamic = "force-dynamic";
@@ -224,7 +225,7 @@ export default async function AssistidoPage({
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
         href={backTarget.href}
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-teal-700"
+        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-sky-700"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         {backTarget.label}
@@ -287,8 +288,10 @@ export default async function AssistidoPage({
                   <span className="text-sm font-semibold text-slate-900">
                     {treatment.setor}
                   </span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-                    {treatmentStateLabel(treatment.estado)}
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${treatmentStateColorClass(treatment.estado)}`}
+                  >
+                    {treatmentStateChip(treatment.estado)}
                   </span>
                 </div>
 
@@ -302,7 +305,7 @@ export default async function AssistidoPage({
 
                 {treatment.distonia && (
                   <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                    <HeartIcon className="h-4 w-4 shrink-0 text-teal-700" />
+                    <PuzzlePieceIcon className="h-4 w-4 shrink-0 text-sky-700" />
                     <span>
                       <span className="text-slate-500">
                         Distonia relatada:{" "}
@@ -319,7 +322,7 @@ export default async function AssistidoPage({
                       {treatment.queixas.map((queixa) => (
                         <li
                           key={queixa}
-                          className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
+                          className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
                         >
                           {queixa}
                         </li>

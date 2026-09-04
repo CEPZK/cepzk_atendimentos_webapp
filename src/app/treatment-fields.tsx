@@ -11,7 +11,7 @@ import { atendimentoLabel, type AtendimentoItem } from "@/lib/atendimento";
 import { TrashIcon } from "@/app/icons";
 
 export const FIELD_CLASS =
-  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30";
+  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30";
 
 export function emptyTreatment(): TreatmentInput {
   return {
@@ -179,7 +179,7 @@ export function TreatmentFields({
                     onChange={(event) =>
                       toggleQueixa(item.id, event.target.checked)
                     }
-                    className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
+                    className="h-4 w-4 rounded border-slate-300 text-sky-700 focus:ring-sky-600"
                   />
                   {item.nome}
                 </label>

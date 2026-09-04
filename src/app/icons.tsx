@@ -1,6 +1,15 @@
 /**
- * Inline icons (Heroicons outline, 24px) used by the dashboard cards and
- * the administration screens. Kept local to avoid an icon dependency.
+ * Inline icons used by the dashboard cards and the administration
+ * screens. Kept local to avoid an icon dependency.
+ *
+ * Two families live here:
+ *
+ * - the Heroicons outline set (24px viewBox), used for the generic UI
+ *   affordances (chevrons, search, check, trash…);
+ * - the project's own icons, mirroring the SVG files in `public/icons`
+ *   (Phosphor 256px viewBox, plus Lucide's book-heart in 24px). Those
+ *   files are the source of truth for the artwork; they are inlined here
+ *   so the icons inherit `currentColor` and cost no extra request.
  */
 type IconProps = { className?: string };
 
@@ -91,24 +100,6 @@ export function SearchIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-export function UserPlusIcon({ className = "h-6 w-6" }: IconProps) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.6}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z"
-      />
-    </svg>
-  );
-}
 
 export function CheckIcon({ className = "h-5 w-5" }: IconProps) {
   return (
@@ -159,24 +150,6 @@ export function TrashIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-export function CalendarIcon({ className = "h-6 w-6" }: IconProps) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.6}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
-      />
-    </svg>
-  );
-}
 
 export function ClipboardUserIcon({ className = "h-6 w-6" }: IconProps) {
   return (
@@ -197,79 +170,94 @@ export function ClipboardUserIcon({ className = "h-6 w-6" }: IconProps) {
   );
 }
 
-export function ClockIcon({ className = "h-6 w-6" }: IconProps) {
+// -----------------------------------------------------------------------------
+// Project icons — mirrors of `public/icons/*.svg`.
+// -----------------------------------------------------------------------------
+
+/** Shared props of the Phosphor-based icons (256px viewBox, 16px stroke). */
+const phosphor = {
+  viewBox: "0 0 256 256",
+  fill: "none",
+  stroke: "currentColor",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  strokeWidth: 16,
+  "aria-hidden": true,
+} as const;
+
+/** `public/icons/user-plus.svg` — Cadastrar Assistido. */
+export function UserPlusIcon({ className = "h-6 w-6" }: IconProps) {
   return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.6}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-      />
+    <svg className={className} {...phosphor}>
+      <line x1="200" y1="136" x2="248" y2="136" />
+      <line x1="224" y1="112" x2="224" y2="160" />
+      <circle cx="108" cy="100" r="60" />
+      <path d="M24,200c20.55-24.45,49.56-40,84-40s63.45,15.55,84,40" />
     </svg>
   );
 }
 
-export function DocumentTextIcon({ className = "h-6 w-6" }: IconProps) {
+/** `public/icons/user-list.svg` — Assistidos em Desobsessão Infantil I/II. */
+export function UserListIcon({ className = "h-6 w-6" }: IconProps) {
   return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.6}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-      />
+    <svg className={className} {...phosphor}>
+      <circle cx="80" cy="104" r="40" />
+      <line x1="160" y1="80" x2="248" y2="80" />
+      <line x1="160" y1="128" x2="248" y2="128" />
+      <line x1="184" y1="176" x2="248" y2="176" />
+      <path d="M16,192c7.1-27.6,34.18-48,64-48s56.9,20.4,64,48" />
     </svg>
   );
 }
 
-export function HeartIcon({ className = "h-5 w-5" }: IconProps) {
+/** `public/icons/list-heart.svg` — Lista de Espera do Acolher com Amor. */
+export function ListHeartIcon({ className = "h-6 w-6" }: IconProps) {
   return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.6}
-      stroke="currentColor"
-      aria-hidden="true"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
-      />
+    <svg className={className} {...phosphor}>
+      <line x1="40" y1="64" x2="216" y2="64" />
+      <line x1="40" y1="128" x2="104" y2="128" />
+      <line x1="40" y1="192" x2="120" y2="192" />
+      <path d="M192,144a24,24,0,0,1,48,0c0,32-48,56-48,56s-48-24-48-56a24,24,0,0,1,48,0Z" />
     </svg>
   );
 }
 
-export function ChildIcon({ className = "h-6 w-6" }: IconProps) {
-  // Simple child icon — head + body, reminiscent of an infant/child profile.
+/** `public/icons/calendar-heart.svg` — Calendário do Acolher com Amor. */
+export function CalendarHeartIcon({ className = "h-6 w-6" }: IconProps) {
+  return (
+    <svg className={className} {...phosphor}>
+      <rect x="40" y="40" width="176" height="176" rx="8" />
+      <line x1="176" y1="24" x2="176" y2="56" />
+      <line x1="80" y1="24" x2="80" y2="56" />
+      <path d="M128,120a24,24,0,0,1,48,0c0,32-48,56-48,56s-48-24-48-56a24,24,0,0,1,48,0Z" />
+    </svg>
+  );
+}
+
+/** `public/icons/puzzle-piece.svg` — the distonia of a treatment. */
+export function PuzzlePieceIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg className={className} {...phosphor}>
+      <path d="M64,216a8,8,0,0,1-8-8V165.31a28,28,0,1,1,0-50.62V72a8,8,0,0,1,8-8h46.69a28,28,0,1,1,50.61,0H208a8,8,0,0,1,8,8v42.69a28,28,0,1,0,0,50.62V208a8,8,0,0,1-8,8Z" />
+    </svg>
+  );
+}
+
+/** `public/icons/book-heart.svg` — Relatório de Atendimentos (Lucide). */
+export function BookHeartIcon({ className = "h-6 w-6" }: IconProps) {
   return (
     <svg
       className={className}
-      fill="none"
       viewBox="0 0 24 24"
-      strokeWidth={1.6}
+      fill="none"
       stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 8.25a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.25 13.5c.35-2.78 2.54-4.5 5.25-4.5s4.9 1.72 5.25 4.5M9.75 11.25l-2.25 3m9-3 2.25 3M9 10.5h6"
-      />
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+      <path d="M8.62 9.8A2.25 2.25 0 1 1 12 6.836a2.25 2.25 0 1 1 3.38 2.966l-2.626 2.856a.998.998 0 0 1-1.507 0z" />
     </svg>
   );
 }

@@ -14,11 +14,11 @@ import {
 } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
 import {
-  CalendarIcon,
-  ChildIcon,
+  BookHeartIcon,
+  CalendarHeartIcon,
   ClipboardUserIcon,
-  ClockIcon,
-  DocumentTextIcon,
+  ListHeartIcon,
+  UserListIcon,
   UserPlusIcon,
   UsersIcon,
 } from "@/app/icons";
@@ -75,7 +75,7 @@ export default async function HomePage() {
       title: "Assistentes em Desobsessão Infantil I",
       description:
         "Consultar os assistidos com tratamento ativo da Desobsessão Infantil I.",
-      icon: <ChildIcon />,
+      icon: <UserListIcon />,
       isVisible:
         belongsToSector(sectors, DESOBSESSAO_INFANTIL_I_SECTOR) ||
         // Compatibilidade com setor legado "Desobsessão Infantil" (sem sufixo).
@@ -91,7 +91,7 @@ export default async function HomePage() {
       title: "Assistentes em Desobsessão Infantil II",
       description:
         "Consultar os assistidos com tratamento ativo da Desobsessão Infantil II.",
-      icon: <ChildIcon />,
+      icon: <UserListIcon />,
       isVisible: belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
     },
     {
@@ -100,7 +100,7 @@ export default async function HomePage() {
       title: "Lista de Espera para o Acolher com Amor",
       description:
         "Consultar os assistidos cujo próximo tratamento é o Acolher com Amor.",
-      icon: <ClockIcon />,
+      icon: <ListHeartIcon />,
       // Só o próprio time do Acolher com Amor (mais o admin) acompanha
       // quem está esperando por ele.
       isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
@@ -111,7 +111,7 @@ export default async function HomePage() {
       title: "Calendário do Acolher com Amor",
       description:
         "Ver as sessões agendadas e ajustar os tratamentos de cada assistido.",
-      icon: <CalendarIcon />,
+      icon: <CalendarHeartIcon />,
       // Mesmo público da lista de espera: o time do Acolher com Amor
       // (mais o admin).
       isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
@@ -122,7 +122,7 @@ export default async function HomePage() {
       title: "Relatório de Atendimentos",
       description:
         "Consultar os relatórios das sessões e registrar ponte, dirigente e observações.",
-      icon: <DocumentTextIcon />,
+      icon: <BookHeartIcon />,
       // Só o time do Acolher com Amor (e o admin) registra e consulta os
       // relatórios das sessões do Acolher com Amor.
       isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
@@ -143,7 +143,7 @@ export default async function HomePage() {
           {sectors.map((sector) => (
             <span
               key={sector.id}
-              className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
+              className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
             >
               {sector.nome}
             </span>

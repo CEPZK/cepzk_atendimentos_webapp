@@ -53,7 +53,7 @@ export function DesobsessaoInfantilList({
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Buscar por nome"
           aria-label="Buscar assistido"
-          className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
+          className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30"
         />
       </div>
 
@@ -67,9 +67,9 @@ export function DesobsessaoInfantilList({
           <li key={assistido.id}>
             <Link
               href={`/assistidos/${assistido.id}?from=${encodeURIComponent(from)}`}
-              className="flex items-center gap-3 p-4 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-600"
+              className="flex items-center gap-3 p-4 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky-600"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-700">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-semibold text-sky-700">
                 {assistidoInitials(assistido.nome_completo)}
               </span>
               <span className="min-w-0 flex-1">
