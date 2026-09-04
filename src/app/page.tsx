@@ -18,6 +18,7 @@ import {
   ChildIcon,
   ClipboardUserIcon,
   ClockIcon,
+  DocumentTextIcon,
   UsersIcon,
 } from "@/app/icons";
 
@@ -111,6 +112,17 @@ export default async function HomePage() {
       icon: <CalendarIcon />,
       // Mesmo público da lista de espera: o time do Acolher com Amor
       // (mais o admin).
+      isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
+    },
+    {
+      key: "aca-relatorios",
+      href: "/acolher-com-amor/relatorios",
+      title: "Relatório de Atendimentos",
+      description:
+        "Consultar os relatórios das sessões e registrar ponte, dirigente e observações.",
+      icon: <DocumentTextIcon />,
+      // Só o time do Acolher com Amor (e o admin) registra e consulta os
+      // relatórios das sessões do Acolher com Amor.
       isVisible: isAdmin(volunteer) || belongsToSector(sectors, ACA_SECTOR),
     },
   ].filter((card) => card.isVisible);
