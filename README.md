@@ -139,9 +139,25 @@ e **telefone** são gravados direto na tabela.
 
 - `public/manifest.webmanifest` — manifesto da aplicação;
 - `public/icons/` + `src/app/favicon.ico` — ícones gerados a partir de
-  `public/icon.svg` (regere com `npm run icons`);
+  `public/icons/cepzk-round-logo.png` (regere com `npm run icons`);
 - `src/app/sw.ts` — entrada do service worker (Serwist);
 - `src/app/register-sw.tsx` — registro do service worker (apenas produção).
+
+## Identidade visual
+
+- **Cor da aplicação**: azul celeste (escala `sky` do Tailwind — `sky-700`
+  nos elementos sólidos, `sky-600` nos focos, `sky-50`/`sky-100` nos fundos
+  suaves). A paleta de nomes do calendário do Acolher com Amor evita o
+  `sky` justamente por ser a cor da interface.
+- **Logo**: `public/icons/cepzk-round-logo.png` — usado no login e como
+  origem dos ícones do PWA.
+- **Ícones dos cards e das telas**: os arquivos de `public/icons/*.svg`
+  são a fonte da arte e estão espelhados como componentes em
+  `src/app/icons.tsx`, para herdarem `currentColor` sem custo de request.
+- **Pílulas de estado do tratamento**: mostram só o estado com a inicial
+  maiúscula (sem o prefixo "Situação"), em tons pastéis —
+  pendente/amarelo, em tratamento/azul, alta/verde, expirado/vermelho.
+  As cores ficam em `TREATMENT_STATE_COLORS` (`src/lib/assistido.ts`).
 
 ## Scripts
 

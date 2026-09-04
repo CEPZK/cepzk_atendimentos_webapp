@@ -10,7 +10,7 @@ import {
   type TreatmentInput,
 } from "@/lib/assistido";
 import type { AtendimentoItem } from "@/lib/atendimento";
-import { CheckIcon, HeartIcon, PlusIcon } from "@/app/icons";
+import { CheckIcon, PlusIcon, PuzzlePieceIcon } from "@/app/icons";
 import { createAssistido } from "@/app/assistidos/actions";
 import {
   emptyTreatment,
@@ -20,7 +20,7 @@ import {
 import { saveAssistido } from "./actions";
 
 const PRIMARY_BUTTON =
-  "w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 const SECONDARY_BUTTON =
   "w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
@@ -239,7 +239,7 @@ export function CadastroAssistidoForm({
 
                 {treatment.distonia && (
                   <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                    <HeartIcon className="h-4 w-4 shrink-0 text-teal-700" />
+                    <PuzzlePieceIcon className="h-4 w-4 shrink-0 text-sky-700" />
                     <span>
                       <span className="text-slate-500">
                         Distonia relatada:{" "}
@@ -258,7 +258,7 @@ export function CadastroAssistidoForm({
                       {treatment.queixas.map((queixa) => (
                         <li
                           key={queixa}
-                          className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
+                          className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
                         >
                           {queixa}
                         </li>
@@ -333,7 +333,7 @@ export function CadastroAssistidoForm({
               onClick={() =>
                 setTreatments((current) => [...current, emptyTreatment()])
               }
-              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-teal-400 hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-600"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-sky-400 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600"
             >
               <PlusIcon className="h-5 w-5" />
               Adicionar tratamento

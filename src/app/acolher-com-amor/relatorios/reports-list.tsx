@@ -46,7 +46,7 @@ export function ReportsList({
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Buscar por nome do assistido"
           aria-label="Buscar relatório por nome do assistido"
-          className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
+          className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30"
         />
       </div>
 
@@ -61,9 +61,9 @@ export function ReportsList({
             <button
               type="button"
               onClick={() => setOpenRelatorio(relatorio)}
-              className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-600"
+              className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky-600"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-700">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-semibold text-sky-700">
                 {assistidoInitials(relatorio.assistidoNome)}
               </span>
               <span className="min-w-0 flex-1">
@@ -119,7 +119,7 @@ function RelatorioDialog({
       className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
     >
       <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-        <p className="text-xs font-medium uppercase tracking-wide text-teal-700">
+        <p className="text-xs font-medium uppercase tracking-wide text-sky-700">
           Relatório
         </p>
         <h3
@@ -140,7 +140,7 @@ function RelatorioDialog({
               {relatorio.tratamentos.map((tratamento) => (
                 <li
                   key={tratamento}
-                  className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
+                  className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
                 >
                   {tratamento}
                 </li>

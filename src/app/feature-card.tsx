@@ -22,9 +22,9 @@ export function FeatureCard({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-teal-300 hover:bg-teal-50/40 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+      className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-sky-300 hover:bg-sky-50/40 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
     >
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white">
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-700 text-white">
         {icon}
       </span>
       <span className="min-w-0 flex-1">
@@ -35,7 +35,7 @@ export function FeatureCard({
           {description}
         </span>
       </span>
-      <ChevronRightIcon className="h-5 w-5 shrink-0 text-slate-300 transition-colors group-hover:text-teal-700" />
+      <ChevronRightIcon className="h-5 w-5 shrink-0 text-slate-300 transition-colors group-hover:text-sky-700" />
     </Link>
   );
 }

@@ -1,5 +1,6 @@
 /**
- * Generates the PWA icons and the favicon from `public/icon.svg`.
+ * Generates the PWA icons and the favicon from the app logo
+ * (`public/icons/cepzk-round-logo.png`).
  *
  * Usage: npm run icons
  */
@@ -7,21 +8,41 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
-const SOURCE = path.resolve("public/icon.svg");
+const SOURCE = path.resolve("public/icons/cepzk-round-logo.png");
+
+/** Background behind the (transparent) logo. Matches the theme colour. */
+const BACKGROUND = { r: 255, g: 255, b: 255, alpha: 1 };
 const OUT_DIR = path.resolve("public/icons");
 const FAVICON_OUT = path.resolve("src/app/favicon.ico");
 
 const PNG_SIZES = [
   { file: "icon-192.png", size: 192 },
   { file: "icon-512.png", size: 512 },
-  { file: "maskable-512.png", size: 512 },
+  // Maskable icons get cropped to the platform's shape: the logo is
+  // inset so nothing important sits in the trimmed area.
+  { file: "maskable-512.png", size: 512, padding: 0.1 },
   { file: "apple-touch-icon.png", size: 180 },
 ];
 
 const FAVICON_SIZES = [16, 32, 48];
 
-async function renderPng(size) {
-  return sharp(SOURCE).resize(size, size).png().toBuffer();
+async function renderPng(size, padding = 0) {
+  const inner = Math.round(size * (1 - 2 * padding));
+  const logo = await sharp(SOURCE)
+    .resize(inner, inner, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .toBuffer();
+
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: BACKGROUND,
+    },
+  })
+    .composite([{ input: logo, gravity: "centre" }])
+    .png()
+    .toBuffer();
 }
 
 /**
@@ -58,8 +79,8 @@ function buildIco(pngs) {
 
 await mkdir(OUT_DIR, { recursive: true });
 
-for (const { file, size } of PNG_SIZES) {
-  const data = await renderPng(size);
+for (const { file, size, padding } of PNG_SIZES) {
+  const data = await renderPng(size, padding);
   await writeFile(path.join(OUT_DIR, file), data);
   console.log(`✓ public/icons/${file} (${size}x${size})`);
 }

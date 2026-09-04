@@ -22,7 +22,7 @@ export default async function RelatoriosPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
         href="/"
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-teal-700"
+        className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-sky-700"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         Início
@@ -38,7 +38,7 @@ export default async function RelatoriosPage() {
 
       <Link
         href="/acolher-com-amor/relatorios/novo"
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
       >
         <PlusIcon className="h-5 w-5" />
         Registrar Relatório

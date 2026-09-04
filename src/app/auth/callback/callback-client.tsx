@@ -78,7 +78,7 @@ export function AuthCallback() {
           </details>
           <a
             href="/login"
-            className="mt-6 block rounded-lg bg-teal-700 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-teal-800"
+            className="mt-6 block rounded-lg bg-sky-700 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-sky-800"
           >
             Voltar para o login
           </a>

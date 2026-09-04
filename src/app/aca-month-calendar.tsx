@@ -197,7 +197,7 @@ export function AcaMonthCalendar({
                   // Hoje é marcado só no contorno da célula, na cor do
                   // tema: nada de fundo colorido competindo com os chips.
                   isToday
-                    ? "z-10 rounded-md ring-2 ring-inset ring-teal-600"
+                    ? "z-10 rounded-md ring-2 ring-inset ring-sky-600"
                     : ""
                 }`}
               >
@@ -205,23 +205,23 @@ export function AcaMonthCalendar({
                   <button
                     type="button"
                     onClick={() => onSelectDay(cell.key)}
-                    className={`flex h-full w-full flex-col items-start gap-1 rounded-lg p-1.5 text-left ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 ${
+                    className={`flex h-full w-full flex-col items-start gap-1 rounded-lg p-1.5 text-left ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-sky-600 ${
                       cell.inMonth
-                        ? "bg-teal-50/70 ring-teal-100 hover:bg-teal-100"
+                        ? "bg-sky-50/70 ring-sky-100 hover:bg-sky-100"
                         : // Fora do mês: mesma célula, apenas mais discreta.
-                          "bg-teal-50/30 ring-teal-50 hover:bg-teal-100/70"
+                          "bg-sky-50/30 ring-sky-50 hover:bg-sky-100/70"
                     }`}
                   >
                     <span
                       className={`text-sm font-semibold ${
-                        cell.inMonth ? "text-teal-800" : "text-teal-700/60"
+                        cell.inMonth ? "text-sky-800" : "text-sky-700/60"
                       }`}
                     >
                       {cell.day}
                     </span>
                     <span
                       className={`text-[10px] font-medium ${
-                        cell.inMonth ? "text-teal-700" : "text-teal-700/60"
+                        cell.inMonth ? "text-sky-700" : "text-sky-700/60"
                       }`}
                     >
                       {formatTime(day!.iso)}
@@ -252,7 +252,7 @@ export function AcaMonthCalendar({
                     <span
                       className={`text-sm ${
                         isToday
-                          ? "font-semibold text-teal-700"
+                          ? "font-semibold text-sky-700"
                           : cell.inMonth
                             ? "text-slate-400"
                             : "text-slate-300"

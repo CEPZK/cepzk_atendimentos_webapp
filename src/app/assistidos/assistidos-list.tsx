@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import {
   assistidoInitials,
   normalizeName,
-  treatmentStateLabel,
+  treatmentStateChip,
+  treatmentStateColorClass,
   type AssistidoListItem,
 } from "@/lib/assistido";
 import { ChevronRightIcon, PlusIcon, SearchIcon } from "@/app/icons";
@@ -43,14 +44,14 @@ export function AssistidosList({
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Buscar por nome"
           aria-label="Buscar assistido"
-          className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
+          className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30"
         />
       </div>
 
       {canRegister && (
         <Link
           href="/assistidos/novo"
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
         >
           <PlusIcon className="h-5 w-5" />
           Cadastrar assistido
@@ -67,9 +68,9 @@ export function AssistidosList({
           <li key={assistido.id}>
             <Link
               href={`/assistidos/${assistido.id}`}
-              className="flex items-center gap-3 p-4 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-600"
+              className="flex items-center gap-3 p-4 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-sky-600"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-700">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-semibold text-sky-700">
                 {assistidoInitials(assistido.nome_completo)}
               </span>
               <span className="min-w-0 flex-1">
@@ -77,8 +78,10 @@ export function AssistidosList({
                   {assistido.nome_completo}
                 </span>
                 {assistido.estado && (
-                  <span className="block truncate text-xs text-slate-500">
-                    {treatmentStateLabel(assistido.estado)}
+                  <span
+                    className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${treatmentStateColorClass(assistido.estado)}`}
+                  >
+                    {treatmentStateChip(assistido.estado)}
                   </span>
                 )}
               </span>
