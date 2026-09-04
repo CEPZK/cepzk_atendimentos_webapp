@@ -10,7 +10,6 @@ import {
   monthOf,
   nameColor,
   shiftMonth,
-  shortName,
   todayKey,
 } from "@/lib/aca-agenda";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/app/icons";
@@ -194,30 +193,28 @@ export function AcaMonthCalendar({
               <div
                 key={cell.key}
                 aria-current={isToday ? "date" : undefined}
-                className={`min-h-[74px] border-b border-r border-slate-100 p-1 last:border-r-0 sm:min-h-[92px] ${
-                  isToday ? "bg-amber-50" : ""
+                className={`relative min-h-[74px] border-b border-r border-slate-100 p-1 last:border-r-0 sm:min-h-[92px] ${
+                  // Hoje é marcado só no contorno da célula, na cor do
+                  // tema: nada de fundo colorido competindo com os chips.
+                  isToday
+                    ? "z-10 rounded-md ring-2 ring-inset ring-teal-600"
+                    : ""
                 }`}
               >
                 {available ? (
                   <button
                     type="button"
                     onClick={() => onSelectDay(cell.key)}
-                    className={`flex h-full w-full flex-col items-start gap-1 rounded-lg p-1.5 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 ${
-                      isToday
-                        ? "bg-teal-100 ring-2 ring-inset ring-amber-500 hover:bg-teal-200"
-                        : cell.inMonth
-                          ? "bg-teal-50/70 ring-1 ring-inset ring-teal-100 hover:bg-teal-100"
-                          : // Fora do mês: mesma célula, apenas mais discreta.
-                            "bg-teal-50/30 ring-1 ring-inset ring-teal-50 hover:bg-teal-100/70"
+                    className={`flex h-full w-full flex-col items-start gap-1 rounded-lg p-1.5 text-left ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 ${
+                      cell.inMonth
+                        ? "bg-teal-50/70 ring-teal-100 hover:bg-teal-100"
+                        : // Fora do mês: mesma célula, apenas mais discreta.
+                          "bg-teal-50/30 ring-teal-50 hover:bg-teal-100/70"
                     }`}
                   >
                     <span
                       className={`text-sm font-semibold ${
-                        isToday
-                          ? "flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-white"
-                          : cell.inMonth
-                            ? "text-teal-800"
-                            : "text-teal-700/60"
+                        cell.inMonth ? "text-teal-800" : "text-teal-700/60"
                       }`}
                     >
                       {cell.day}
@@ -239,7 +236,7 @@ export function AcaMonthCalendar({
                               (colors.get(nome) ?? nameColor(nome)).chip
                             } ${cell.inMonth ? "" : "opacity-60"}`}
                           >
-                            {shortName(nome)}
+                            {nome}
                           </span>
                         ))}
                         {day!.assistidos.length > 4 && (
@@ -255,7 +252,7 @@ export function AcaMonthCalendar({
                     <span
                       className={`text-sm ${
                         isToday
-                          ? "flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 font-semibold text-white"
+                          ? "font-semibold text-teal-700"
                           : cell.inMonth
                             ? "text-slate-400"
                             : "text-slate-300"
