@@ -15,7 +15,10 @@ export function AssistidosList({
   canRegister,
 }: {
   assistidos: AssistidoListItem[];
-  /** Registering is done by the Atendimento Fraterno, who interviews. */
+  /**
+   * Only admins register here: the Atendimento Fraterno registers on its
+   * own Cadastrar Assistido screen.
+   */
   canRegister: boolean;
 }) {
   const [query, setQuery] = useState("");

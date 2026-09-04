@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import {
+  belongsToDepartment,
   belongsToSector,
-  loadVolunteerAtendimentos,
   loadVolunteerSectors,
   requireVolunteer,
 } from "@/lib/current-volunteer";
 import { isAdmin, ROLE_LABELS } from "@/lib/volunteer";
 import {
   ACA_SECTOR,
+  ATENDIMENTO_FRATERNO,
   DESOBSESSAO_INFANTIL_I_SECTOR,
   DESOBSESSAO_INFANTIL_II_SECTOR,
-  isDesobsessaoInfantil,
 } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
 import {
@@ -19,6 +19,7 @@ import {
   ClipboardUserIcon,
   ClockIcon,
   DocumentTextIcon,
+  UserPlusIcon,
   UsersIcon,
 } from "@/app/icons";
 
@@ -34,16 +35,7 @@ export default async function HomePage() {
 
   // Sectors the volunteer is scheduled for: the cards are released per
   // department, so the home screen needs them to decide what to show.
-  const [sectors, atendimentos] = await Promise.all([
-    loadVolunteerSectors(supabase, volunteer.id),
-    loadVolunteerAtendimentos(supabase, volunteer.id),
-  ]);
-
-  // Os atendimentos da Desobsessão Infantil não aparecem na lista geral
-  // de assistidos: os voluntários dessas equipes usam os cards próprios.
-  const hasNonDIAtendimento = atendimentos.some(
-    (at) => !isDesobsessaoInfantil(at.setor),
-  );
+  const sectors = await loadVolunteerSectors(supabase, volunteer.id);
 
   const cards = [
     {
@@ -62,10 +54,20 @@ export default async function HomePage() {
       description:
         "Consultar os assistidos e seus tratamentos, e cadastrar novos.",
       icon: <ClipboardUserIcon />,
-      // O Atendimento Fraterno vê todos; os outros times veem os
-      // assistidos dos atendimentos da sua escala, com exceção da
-      // Desobsessão Infantil que tem cards próprios.
-      isVisible: isAdmin(volunteer) || hasNonDIAtendimento,
+      // A lista geral é dos admins: os times enxergam seus assistidos
+      // pelos cards próprios, e o Atendimento Fraterno, pelo cadastro.
+      isVisible: isAdmin(volunteer),
+    },
+    {
+      key: "atendimento-fraterno-cadastrar",
+      href: "/atendimento-fraterno/cadastrar",
+      title: "Cadastrar Assistido",
+      description:
+        "Registrar um novo assistido ou continuar o cadastro de um já existente.",
+      icon: <UserPlusIcon />,
+      // Só o time do Atendimento Fraterno, que faz a entrevista; os
+      // admins cadastram pela Lista de Assistidos.
+      isVisible: belongsToDepartment(sectors, ATENDIMENTO_FRATERNO),
     },
     {
       key: "di-i",

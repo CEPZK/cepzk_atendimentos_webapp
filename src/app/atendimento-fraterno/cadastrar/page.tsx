@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { requireAdmin } from "@/lib/current-volunteer";
-import { type CatalogItem } from "@/lib/assistido";
+import { requireDepartmentOnly } from "@/lib/current-volunteer";
+import { ATENDIMENTO_FRATERNO, type CatalogItem } from "@/lib/assistido";
 import {
   mapAtendimento,
   sortAtendimentos,
@@ -9,7 +9,7 @@ import {
   type AtendimentoRow,
 } from "@/lib/atendimento";
 import { ArrowLeftIcon } from "@/app/icons";
-import { NewAssistidoFlow } from "./new-assistido-flow";
+import { CadastrarAssistidoFlow } from "./cadastrar-assistido-flow";
 
 export const dynamic = "force-dynamic";
 
@@ -17,13 +17,13 @@ export const metadata: Metadata = {
   title: "Cadastrar assistido",
 };
 
-export default async function NewAssistidoPage() {
-  const { supabase } = await requireAdmin();
+export default async function CadastrarAssistidoPage() {
+  const { supabase } = await requireDepartmentOnly(ATENDIMENTO_FRATERNO);
 
+  // Precedência 0 é a entrevista do Atendimento Fraterno, que não é um
+  // tratamento — o cadastro só oferece os atendimentos tratáveis.
   const [{ data: atendimentoRows }, { data: distonias }, { data: queixas }] =
     await Promise.all([
-      // Precedência 0 é a entrevista do Atendimento Fraterno, que não é um
-      // tratamento — o cadastro só oferece os atendimentos tratáveis.
       supabase
         .from("cepzk_atendimento")
         .select(ATENDIMENTO_SELECT)
@@ -48,14 +48,14 @@ export default async function NewAssistidoPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
-        href="/assistidos"
+        href="/"
         className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-teal-700"
       >
         <ArrowLeftIcon className="h-4 w-4" />
-        Assistidos
+        Início
       </Link>
 
-      <NewAssistidoFlow
+      <CadastrarAssistidoFlow
         atendimentos={atendimentos}
         distonias={distonias ?? []}
         queixas={queixas ?? []}
