@@ -157,24 +157,24 @@ e **telefone** são gravados direto na tabela.
 - **Pílulas de estado da assistência**: mostram só o estado com a inicial
   maiúscula (sem o prefixo "Situação"), em tons pastéis —
   pendente/amarelo, em assistência/azul, alta/verde, expirado/vermelho.
-  As cores ficam em `TREATMENT_STATE_COLORS` e os rótulos, em
-  `TREATMENT_STATE_LABELS` (`src/lib/assistido.ts`).
+  As cores ficam em `TREATMENT_STATE_COLORS` (`src/lib/assistido.ts`) e o
+  texto é o próprio valor gravado em `cepzk_tratamento.estado`.
 
 ## Vocabulário
 
 A interface fala **assistência**; o banco e o código mantêm **tratamento**
-(`cepzk_tratamento`, `tratamentoId`, `treatmentStateAction`…). A tradução
-entre os dois vocabulários fica em `src/lib/assistido.ts`:
+(`cepzk_tratamento`, `tratamento_id`, `tratamentoId`,
+`treatmentStateAction`…) — nomes de tabela, coluna e identificador não
+aparecem em tela nenhuma.
 
-- `TREATMENT_STATE_LABELS` — o estado gravado como `em tratamento` é lido
-  na tela como **Em assistência** (um estado que a aplicação não conhece é
-  mostrado como veio, com a inicial maiúscula);
-- `treatmentStateAction` — o botão do Acolher com Amor é **Iniciar
-  Assistência**.
-
-Trocar um rótulo é mexer nesses pontos e nas mensagens das Server Actions,
-nunca no valor gravado no banco: as consultas e as transições comparam o
-valor canônico (`isState`, `canonicalState`).
+Os **estados** não são traduzidos pelo frontend: a pílula mostra o valor
+gravado em `cepzk_tratamento.estado` com a inicial maiúscula, e é esse
+valor que as consultas e as transições comparam (`isState`,
+`canonicalState`). Renomear um estado é, portanto, uma migração no banco —
+feita ela, as telas passam a ler o nome novo sozinhas. O único ponto do
+frontend que conhece os valores é `src/lib/assistido.ts`: as constantes
+`ESTADO_*` (gravadas ao agendar e ao mudar a situação), a ordem
+(`TREATMENT_STATE_ORDER`) e as cores (`TREATMENT_STATE_COLORS`).
 
 ## Scripts
 

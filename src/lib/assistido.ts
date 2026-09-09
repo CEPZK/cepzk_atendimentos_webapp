@@ -157,31 +157,16 @@ export function treatmentStateRank(estado: string | null | undefined): number {
 }
 
 /**
- * The states as the volunteer reads them.
+ * The state as displayed on a chip — just the state, with a capitalized
+ * first letter: "pendente" → "Pendente", "em assistência" → "Em
+ * assistência". The word "Situação" is not repeated on every chip.
  *
- * `cepzk_tratamento.estado` keeps the values the platform writes ("em
- * tratamento"); the screens talk about assistências, so the chip
- * translates the stored value. A state the platform does not know is
- * shown as it is, with a capitalized first letter — it never disappears.
- */
-const TREATMENT_STATE_LABELS: Record<string, string> = {
-  [ESTADO_PENDENTE]: "Pendente",
-  [ESTADO_EM_TRATAMENTO]: "Em assistência",
-  [ESTADO_ALTA]: "Alta",
-  [ESTADO_EXPIRADO]: "Expirado",
-};
-
-/**
- * The state as displayed on a chip: "pendente" → "Pendente",
- * "em tratamento" → "Em assistência". The word "Situação" is not repeated
- * on every chip.
+ * Nothing is translated here: the chip reads the value the database
+ * stores, so renaming a state is a migration, not a change of screen.
  */
 export function treatmentStateChip(estado: string): string {
   if (!estado) return estado;
-  return (
-    TREATMENT_STATE_LABELS[canonicalState(estado)] ??
-    (estado.charAt(0).toUpperCase() + estado.slice(1))
-  );
+  return estado.charAt(0).toUpperCase() + estado.slice(1);
 }
 
 /** Tailwind classes for the colored state chip. Falls back to slate. */
