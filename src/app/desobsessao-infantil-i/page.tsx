@@ -138,7 +138,7 @@ export default async function DesobsessaoInfantilIPage() {
         Assistentes em Desobsessão Infantil I
       </h1>
       <p className="mt-1 text-sm text-slate-500">
-        Assistidos com tratamento ativo da Desobsessão Infantil I,
+        Assistidos com assistência ativa da Desobsessão Infantil I,
         ordenados alfabeticamente. Use a busca para encontrar assistidos
         arquivados.
       </p>
@@ -152,7 +152,7 @@ export default async function DesobsessaoInfantilIPage() {
         <DesobsessaoInfantilList
           assistidos={merged}
           from={DI_I_FROM}
-          emptyLabel="Nenhum assistido com tratamento da Desobsessão Infantil I no momento."
+          emptyLabel="Nenhum assistido com assistência da Desobsessão Infantil I no momento."
         />
       )}
     </main>

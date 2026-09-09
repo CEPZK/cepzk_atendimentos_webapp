@@ -1,7 +1,7 @@
 # CEPZK — Atendimentos (Webapp)
 
-Frontend do sistema de controle dos atendimentos de tratamentos da Casa
-Espírita CEPZK. Um **PWA** construído com [Next.js](https://nextjs.org)
+Frontend do sistema de controle dos atendimentos e das assistências da
+Casa Espírita CEPZK. Um **PWA** construído com [Next.js](https://nextjs.org)
 (App Router) e hospedado na [Vercel](https://vercel.com).
 
 > Convenção do projeto: aplicação em Português (BR); **código em inglês**,
@@ -154,10 +154,27 @@ e **telefone** são gravados direto na tabela.
 - **Ícones dos cards e das telas**: os arquivos de `public/icons/*.svg`
   são a fonte da arte e estão espelhados como componentes em
   `src/app/icons.tsx`, para herdarem `currentColor` sem custo de request.
-- **Pílulas de estado do tratamento**: mostram só o estado com a inicial
+- **Pílulas de estado da assistência**: mostram só o estado com a inicial
   maiúscula (sem o prefixo "Situação"), em tons pastéis —
-  pendente/amarelo, em tratamento/azul, alta/verde, expirado/vermelho.
-  As cores ficam em `TREATMENT_STATE_COLORS` (`src/lib/assistido.ts`).
+  pendente/amarelo, em assistência/azul, alta/verde, expirado/vermelho.
+  As cores ficam em `TREATMENT_STATE_COLORS` e os rótulos, em
+  `TREATMENT_STATE_LABELS` (`src/lib/assistido.ts`).
+
+## Vocabulário
+
+A interface fala **assistência**; o banco e o código mantêm **tratamento**
+(`cepzk_tratamento`, `tratamentoId`, `treatmentStateAction`…). A tradução
+entre os dois vocabulários fica em `src/lib/assistido.ts`:
+
+- `TREATMENT_STATE_LABELS` — o estado gravado como `em tratamento` é lido
+  na tela como **Em assistência** (um estado que a aplicação não conhece é
+  mostrado como veio, com a inicial maiúscula);
+- `treatmentStateAction` — o botão do Acolher com Amor é **Iniciar
+  Assistência**.
+
+Trocar um rótulo é mexer nesses pontos e nas mensagens das Server Actions,
+nunca no valor gravado no banco: as consultas e as transições comparam o
+valor canônico (`isState`, `canonicalState`).
 
 ## Scripts
 

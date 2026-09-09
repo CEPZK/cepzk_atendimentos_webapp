@@ -9,12 +9,14 @@ import {
   DESOBSESSAO_INFANTIL_SECTOR,
   ESTADO_ALTA,
   ESTADO_EM_TRATAMENTO,
+  ESTADO_EXPIRADO,
   ESTADO_PENDENTE,
   findSimilarNames,
   NAME_MATCH_THRESHOLD,
   normalizeName,
   similarityReason,
   treatmentStateAction,
+  treatmentStateChip,
   type Assistido,
 } from "./assistido";
 
@@ -388,5 +390,32 @@ describe("treatmentStateAction", () => {
     expect(
       treatmentStateAction("Atendimento Fraterno", ESTADO_PENDENTE),
     ).toBeNull();
+  });
+});
+
+/**
+ * The states are stored as the platform writes them ("em tratamento") but
+ * read as the app talks ("Em assistência"): the chip is the only place
+ * where the two vocabularies meet, and every list uses it.
+ */
+describe("treatmentStateChip", () => {
+  it("reads the stored states in the words of the app", () => {
+    expect(treatmentStateChip(ESTADO_PENDENTE)).toBe("Pendente");
+    expect(treatmentStateChip(ESTADO_EM_TRATAMENTO)).toBe("Em assistência");
+    expect(treatmentStateChip(ESTADO_ALTA)).toBe("Alta");
+    expect(treatmentStateChip(ESTADO_EXPIRADO)).toBe("Expirado");
+  });
+
+  it("folds case and accents before translating", () => {
+    expect(treatmentStateChip("EM TRATAMENTO")).toBe("Em assistência");
+    expect(treatmentStateChip(" Em Tratamento ")).toBe("Em assistência");
+  });
+
+  it("shows a state it does not know as it is, capitalized", () => {
+    expect(treatmentStateChip("em observação")).toBe("Em observação");
+  });
+
+  it("has nothing to show for an empty state", () => {
+    expect(treatmentStateChip("")).toBe("");
   });
 });

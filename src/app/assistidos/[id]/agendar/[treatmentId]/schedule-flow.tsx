@@ -293,8 +293,8 @@ function ConfirmDialog({
           Confirmar agendamento
         </h3>
         <p className="mt-2 text-sm text-slate-600">
-          {assistidoNome} passa para <strong>em tratamento</strong> com estas
-          sessões:
+          {assistidoNome} passa para a situação <strong>Em assistência</strong>{" "}
+          com estas sessões:
         </p>
         <ul className="mt-3 space-y-1 text-sm text-slate-700">
           {dates.map((date) => (

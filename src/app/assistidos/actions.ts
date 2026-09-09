@@ -10,6 +10,7 @@ import {
   isAcolherComAmor,
   canonicalState,
   treatmentStateAction,
+  treatmentStateChip,
   ESTADO_EM_TRATAMENTO,
   TEA_DISTONIA,
   type Assistido,
@@ -117,10 +118,10 @@ export async function createAssistido(
     return { ok: false, message: "Informe o nome completo do assistido." };
   }
   if (input.treatments.length === 0) {
-    return { ok: false, message: "Inclua ao menos um tratamento." };
+    return { ok: false, message: "Inclua ao menos uma assistência." };
   }
 
-  // Precedência 0 (a entrevista do Atendimento Fraterno) não é tratamento:
+  // Precedência 0 (a entrevista do Atendimento Fraterno) não é assistência:
   // a tela não oferece e a action também não aceita.
   const [{ data: atendimentoRows }, { data: distonias }] = await Promise.all([
     supabase
@@ -145,7 +146,7 @@ export async function createAssistido(
     if (!treatment.atendimentoId) {
       return {
         ok: false,
-        message: "Escolha o atendimento de cada tratamento.",
+        message: "Escolha o atendimento de cada assistência.",
       };
     }
 
@@ -153,14 +154,14 @@ export async function createAssistido(
     if (!atendimento) {
       return {
         ok: false,
-        message: "Este atendimento não está disponível para tratamento.",
+        message: "Este atendimento não está disponível para assistência.",
       };
     }
 
     if (seenAtendimentos.has(atendimento.id)) {
       return {
         ok: false,
-        message: `Há dois tratamentos para ${atendimentoLabel(
+        message: `Há duas assistências para ${atendimentoLabel(
           atendimento,
         )}. O assistido entra uma vez em cada atendimento.`,
       };
@@ -208,7 +209,7 @@ export async function createAssistido(
 
     if (error || !row) {
       return rollback(
-        `Não foi possível registrar o tratamento (${error?.code}: ${error?.message}).`,
+        `Não foi possível registrar a assistência (${error?.code}: ${error?.message}).`,
       );
     }
 
@@ -293,15 +294,15 @@ export async function updateTreatmentState(
     return {
       ok: false,
       message: error
-        ? `Não foi possível ler o tratamento (${error.code}: ${error.message}).`
-        : "Tratamento não encontrado.",
+        ? `Não foi possível ler a assistência (${error.code}: ${error.message}).`
+        : "Assistência não encontrada.",
     };
   }
 
   if (!access.canManageTreatment(treatment.atendimento_id)) {
     return {
       ok: false,
-      message: "Este tratamento é de outro atendimento.",
+      message: "Esta assistência é de outro atendimento.",
     };
   }
 
@@ -316,7 +317,7 @@ export async function updateTreatmentState(
   if (!allowed || canonicalState(allowed.nextState) !== canonicalState(nextState)) {
     return {
       ok: false,
-      message: `Esta mudança não é possível para o tratamento (situação atual: ${treatment.estado}).`,
+      message: `Esta mudança não é possível para a assistência (situação atual: ${treatmentStateChip(treatment.estado)}).`,
     };
   }
 
@@ -389,13 +390,13 @@ export async function scheduleAcaTreatment(
     return {
       ok: false,
       message: error
-        ? `Não foi possível ler o tratamento (${error.code}: ${error.message}).`
-        : "Tratamento não encontrado.",
+        ? `Não foi possível ler a assistência (${error.code}: ${error.message}).`
+        : "Assistência não encontrada.",
     };
   }
 
   if (!access.canManageTreatment(treatment.atendimento_id)) {
-    return { ok: false, message: "Este tratamento é de outro atendimento." };
+    return { ok: false, message: "Esta assistência é de outro atendimento." };
   }
 
   const embedded = Array.isArray(treatment.atendimento)
@@ -411,7 +412,7 @@ export async function scheduleAcaTreatment(
   if (!atendimento || !allowed || allowed.nextState !== ESTADO_EM_TRATAMENTO) {
     return {
       ok: false,
-      message: `Este tratamento não pode ser agendado (situação atual: ${treatment.estado}).`,
+      message: `Esta assistência não pode ser agendada (situação atual: ${treatmentStateChip(treatment.estado)}).`,
     };
   }
 
@@ -473,7 +474,7 @@ export async function scheduleAcaTreatment(
     .returns<{ id: number }[]>();
 
   if ((existing ?? []).length > 0) {
-    return { ok: false, message: "Este tratamento já tem sessões agendadas." };
+    return { ok: false, message: "Esta assistência já tem sessões agendadas." };
   }
 
   const { data: created, error: sessaoError } = await supabase
@@ -555,7 +556,7 @@ export async function scheduleAcaTreatment(
   revalidatePath("/desobsessao-infantil-ii");
   return {
     ok: true,
-    message: `Tratamento agendado em ${SESSION_COUNT} sessões.`,
+    message: `Assistência agendada em ${SESSION_COUNT} sessões.`,
   };
 }
 
@@ -597,13 +598,13 @@ export async function updateAcaTreatmentProcedures(
     return {
       ok: false,
       message: error
-        ? `Não foi possível ler o tratamento (${error.code}: ${error.message}).`
-        : "Tratamento não encontrado.",
+        ? `Não foi possível ler a assistência (${error.code}: ${error.message}).`
+        : "Assistência não encontrada.",
     };
   }
 
   if (!access.canManageTreatment(treatment.atendimento_id)) {
-    return { ok: false, message: "Este tratamento é de outro atendimento." };
+    return { ok: false, message: "Esta assistência é de outro atendimento." };
   }
 
   const embedded = Array.isArray(treatment.atendimento)
@@ -612,7 +613,7 @@ export async function updateAcaTreatmentProcedures(
   const atendimento = embedded ? mapAtendimento(embedded) : null;
 
   if (!atendimento || !isAcolherComAmor(atendimento.setor)) {
-    return { ok: false, message: "Este tratamento não é do Acolher com Amor." };
+    return { ok: false, message: "Esta assistência não é do Acolher com Amor." };
   }
 
   // As sessões que já existem: a edição é apenas dos procedimentos delas.
@@ -626,7 +627,7 @@ export async function updateAcaTreatmentProcedures(
   if (sessionIds.size === 0) {
     return {
       ok: false,
-      message: "Este tratamento ainda não tem sessões agendadas.",
+      message: "Esta assistência ainda não tem sessões agendadas.",
     };
   }
 
@@ -635,7 +636,7 @@ export async function updateAcaTreatmentProcedures(
     if (!sessionIds.has(session.sessaoId)) {
       return {
         ok: false,
-        message: "Sessão não encontrada neste tratamento.",
+        message: "Sessão não encontrada nesta assistência.",
       };
     }
     if (receivedIds.has(session.sessaoId)) {
@@ -646,7 +647,7 @@ export async function updateAcaTreatmentProcedures(
   if (receivedIds.size !== sessionIds.size) {
     return {
       ok: false,
-      message: "Todas as sessões do tratamento precisam ser enviadas.",
+      message: "Todas as sessões da assistência precisam ser enviadas.",
     };
   }
 

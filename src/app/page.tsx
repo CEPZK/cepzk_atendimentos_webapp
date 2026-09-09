@@ -52,7 +52,7 @@ export default async function HomePage() {
       href: "/assistidos",
       title: "Lista de Assistidos",
       description:
-        "Consultar os assistidos e seus tratamentos, e cadastrar novos.",
+        "Consultar os assistidos e as assistências de cada um, e cadastrar novos.",
       icon: <ClipboardUserIcon />,
       // A lista geral é dos admins: os times enxergam seus assistidos
       // pelos cards próprios, e o Atendimento Fraterno, pelo cadastro.
@@ -74,7 +74,7 @@ export default async function HomePage() {
       href: "/desobsessao-infantil-i",
       title: "Assistentes em Desobsessão Infantil I",
       description:
-        "Consultar os assistidos com tratamento ativo da Desobsessão Infantil I.",
+        "Consultar os assistidos com assistência ativa da Desobsessão Infantil I.",
       icon: <UserListIcon />,
       isVisible:
         belongsToSector(sectors, DESOBSESSAO_INFANTIL_I_SECTOR) ||
@@ -90,7 +90,7 @@ export default async function HomePage() {
       href: "/desobsessao-infantil-ii",
       title: "Assistentes em Desobsessão Infantil II",
       description:
-        "Consultar os assistidos com tratamento ativo da Desobsessão Infantil II.",
+        "Consultar os assistidos com assistência ativa da Desobsessão Infantil II.",
       icon: <UserListIcon />,
       isVisible: belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
     },
@@ -99,7 +99,7 @@ export default async function HomePage() {
       href: "/acolher-com-amor/lista-de-espera",
       title: "Lista de Espera para o Acolher com Amor",
       description:
-        "Consultar os assistidos cujo próximo tratamento é o Acolher com Amor.",
+        "Consultar os assistidos cuja próxima assistência é o Acolher com Amor.",
       icon: <ListHeartIcon />,
       // Só o próprio time do Acolher com Amor (mais o admin) acompanha
       // quem está esperando por ele.
@@ -110,7 +110,7 @@ export default async function HomePage() {
       href: "/acolher-com-amor/calendario",
       title: "Calendário do Acolher com Amor",
       description:
-        "Ver as sessões agendadas e ajustar os tratamentos de cada assistido.",
+        "Ver as sessões agendadas e ajustar as assistências de cada assistido.",
       icon: <CalendarHeartIcon />,
       // Mesmo público da lista de espera: o time do Acolher com Amor
       // (mais o admin).

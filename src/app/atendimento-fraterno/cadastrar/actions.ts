@@ -103,7 +103,7 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
     if (!treatment.atendimentoId) {
       return {
         ok: false,
-        message: "Escolha o atendimento de cada tratamento.",
+        message: "Escolha o atendimento de cada assistência.",
       };
     }
 
@@ -111,14 +111,14 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
     if (!atendimento) {
       return {
         ok: false,
-        message: "Este atendimento não está disponível para tratamento.",
+        message: "Este atendimento não está disponível para assistência.",
       };
     }
 
     if (seenAtendimentos.has(atendimento.id)) {
       return {
         ok: false,
-        message: `Há dois tratamentos para ${atendimentoLabel(
+        message: `Há duas assistências para ${atendimentoLabel(
           atendimento,
         )}. O assistido entra uma vez em cada atendimento.`,
       };
@@ -130,9 +130,9 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
     if (!canRepeatAtendimento(existing ?? [], atendimento.id)) {
       return {
         ok: false,
-        message: `Este assistido já tem um tratamento ativo para ${atendimentoLabel(
+        message: `Este assistido já tem uma assistência ativa para ${atendimentoLabel(
           atendimento,
-        )}. Para incluir outro igual, arquive antes os tratamentos existentes.`,
+        )}. Para incluir outro igual, arquive antes as assistências existentes.`,
       };
     }
 
@@ -191,7 +191,7 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
 
     if (error || !row) {
       return rollback(
-        `Não foi possível registrar o tratamento (${error?.code}: ${error?.message}).`,
+        `Não foi possível registrar a assistência (${error?.code}: ${error?.message}).`,
       );
     }
     createdIds.push(row.id);

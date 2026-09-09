@@ -157,13 +157,31 @@ export function treatmentStateRank(estado: string | null | undefined): number {
 }
 
 /**
- * The state as displayed on a chip — just the state, with a capitalized
- * first letter: "pendente" → "Pendente", "em tratamento" → "Em
- * tratamento". The word "Situação" is not repeated on every chip.
+ * The states as the volunteer reads them.
+ *
+ * `cepzk_tratamento.estado` keeps the values the platform writes ("em
+ * tratamento"); the screens talk about assistências, so the chip
+ * translates the stored value. A state the platform does not know is
+ * shown as it is, with a capitalized first letter — it never disappears.
+ */
+const TREATMENT_STATE_LABELS: Record<string, string> = {
+  [ESTADO_PENDENTE]: "Pendente",
+  [ESTADO_EM_TRATAMENTO]: "Em assistência",
+  [ESTADO_ALTA]: "Alta",
+  [ESTADO_EXPIRADO]: "Expirado",
+};
+
+/**
+ * The state as displayed on a chip: "pendente" → "Pendente",
+ * "em tratamento" → "Em assistência". The word "Situação" is not repeated
+ * on every chip.
  */
 export function treatmentStateChip(estado: string): string {
   if (!estado) return estado;
-  return estado.charAt(0).toUpperCase() + estado.slice(1);
+  return (
+    TREATMENT_STATE_LABELS[canonicalState(estado)] ??
+    (estado.charAt(0).toUpperCase() + estado.slice(1))
+  );
 }
 
 /** Tailwind classes for the colored state chip. Falls back to slate. */
@@ -180,7 +198,7 @@ export function treatmentStateColorClass(estado: string | null | undefined): str
  *
  * - Desobsessão Infantil discharges the child ("Dar Alta"), from any
  *   state that is not already an alta;
- * - Acolher com Amor starts a treatment that is still waiting — the team
+ * - Acolher com Amor starts a treatment that is still waiting — the app
  *   calls its treatments "assistências", and so does the button.
  *
  * Used both by the screen (to draw the button) and by the Server Action

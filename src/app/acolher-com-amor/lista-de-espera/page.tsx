@@ -79,7 +79,7 @@ export default async function AcaWaitlistPage() {
         Lista de Espera para o Acolher com Amor
       </h1>
       <p className="mt-1 text-sm text-slate-500">
-        Assistidos cujo próximo tratamento é o Acolher com Amor, dos mais
+        Assistidos cuja próxima assistência é o Acolher com Amor, dos mais
         antigos aos mais recentes na espera.
       </p>
 
