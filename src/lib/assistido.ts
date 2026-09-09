@@ -180,7 +180,8 @@ export function treatmentStateColorClass(estado: string | null | undefined): str
  *
  * - Desobsessão Infantil discharges the child ("Dar Alta"), from any
  *   state that is not already an alta;
- * - Acolher com Amor starts a treatment that is still waiting.
+ * - Acolher com Amor starts a treatment that is still waiting — the team
+ *   calls its treatments "assistências", and so does the button.
  *
  * Used both by the screen (to draw the button) and by the Server Action
  * (to decide whether the write is allowed), so the two cannot drift.
@@ -193,7 +194,7 @@ export function treatmentStateAction(
     return { nextState: ESTADO_ALTA, label: "Dar Alta" };
   }
   if (isAcolherComAmor(setor) && isState(estado, ESTADO_PENDENTE)) {
-    return { nextState: ESTADO_EM_TRATAMENTO, label: "Iniciar Tratamento" };
+    return { nextState: ESTADO_EM_TRATAMENTO, label: "Iniciar Assistência" };
   }
   return null;
 }

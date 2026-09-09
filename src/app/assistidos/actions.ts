@@ -403,7 +403,7 @@ export async function scheduleAcaTreatment(
     : treatment.atendimento;
   const atendimento = embedded ? mapAtendimento(embedded) : null;
 
-  // A mesma regra que desenha o botão "Iniciar Tratamento".
+  // A mesma regra que desenha o botão "Iniciar Assistência".
   const allowed = atendimento
     ? treatmentStateAction(atendimento.setor, treatment.estado)
     : null;

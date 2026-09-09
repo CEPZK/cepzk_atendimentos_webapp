@@ -221,6 +221,20 @@ export default async function AssistidoPage({
 
   const interviewer = one(assistido.entrevistador);
 
+  // O time do Acolher com Amor chama o tratamento de "assistência": a
+  // seção fala a língua de quem abriu a tela — o voluntário escalado no
+  // setor, ou quem veio da lista de espera dele. As outras equipes (e a
+  // lista geral dos admins) seguem lendo "tratamentos".
+  const acaVocabulary =
+    from === "aca-waitlist" ||
+    access.atendimentos.some((atendimento) =>
+      isAcolherComAmor(atendimento.setor),
+    );
+  const treatmentsLabel = acaVocabulary ? "Assistências" : "Tratamentos";
+  const noTreatmentsLabel = acaVocabulary
+    ? "Nenhuma assistência registrada."
+    : "Nenhum tratamento registrado.";
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
@@ -270,13 +284,12 @@ export default async function AssistidoPage({
 
       <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">
-          Tratamentos{treatments.length > 0 && ` (${treatments.length})`}
+          {treatmentsLabel}
+          {treatments.length > 0 && ` (${treatments.length})`}
         </h2>
 
         {treatments.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">
-            Nenhum tratamento registrado.
-          </p>
+          <p className="mt-3 text-sm text-slate-500">{noTreatmentsLabel}</p>
         ) : (
           <ul className="mt-4 space-y-3">
             {treatments.map((treatment) => (
