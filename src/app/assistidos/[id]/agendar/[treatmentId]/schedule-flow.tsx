@@ -11,6 +11,7 @@ import {
   formatLongDate,
   formatShortDate,
   formatTime,
+  isOnDay,
   nameColor,
   sessionDates,
 } from "@/lib/aca-agenda";
@@ -42,6 +43,11 @@ interface ScheduleFlowProps {
   days: CalendarDay[];
   treatment: TreatmentSummary;
   procedimentos: CatalogItem[];
+  /**
+   * `YYYY-MM-DD` key of the current day in the house's time zone, given by
+   * the page: the session that falls on it is highlighted.
+   */
+  today: string;
 }
 
 /**
@@ -58,6 +64,7 @@ export function ScheduleFlow({
   days,
   treatment,
   procedimentos,
+  today,
 }: ScheduleFlowProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -114,6 +121,7 @@ export function ScheduleFlow({
       <CalendarStep
         horario={horario}
         days={days}
+        today={today}
         onChoose={chooseDay}
       />
     );
@@ -140,25 +148,43 @@ export function ScheduleFlow({
       <TreatmentSummaryCard treatment={treatment} />
 
       <ol className="mt-4 space-y-3">
-        {dates.map((date, index) => (
-          <li
-            key={date.toISOString()}
-            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <p className="text-sm font-semibold text-slate-900 first-letter:uppercase">
-              {index + 1}ª sessão — {formatLongDate(date)}
-            </p>
-            <p className="text-xs text-slate-500">
-              {formatShortDate(date)} · {formatTime(date)}
-            </p>
+        {dates.map((date, index) => {
+          // A sessão do dia corrente ganha destaque: quem começa a
+          // assistência no próprio dia do atendimento vê logo qual é.
+          const isToday = isOnDay(date, today);
 
-            <SessionProceduresFields
-              procedimentos={procedimentos}
-              value={sessions[index] ?? [null]}
-              onChange={(next) => updateSession(index, next)}
-            />
-          </li>
-        ))}
+          return (
+            <li
+              key={date.toISOString()}
+              aria-current={isToday ? "date" : undefined}
+              className={`rounded-2xl border p-4 shadow-sm ${
+                isToday
+                  ? "border-sky-300 bg-sky-50/70 ring-1 ring-inset ring-sky-200"
+                  : "border-slate-200 bg-white"
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900 first-letter:uppercase">
+                  {index + 1}ª sessão — {formatLongDate(date)}
+                </p>
+                {isToday && (
+                  <span className="rounded-full bg-sky-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+                    Hoje
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">
+                {formatShortDate(date)} · {formatTime(date)}
+              </p>
+
+              <SessionProceduresFields
+                procedimentos={procedimentos}
+                value={sessions[index] ?? [null]}
+                onChange={(next) => updateSession(index, next)}
+              />
+            </li>
+          );
+        })}
       </ol>
 
       {error && (
@@ -196,10 +222,13 @@ export function ScheduleFlow({
 function CalendarStep({
   horario,
   days,
+  today,
   onChoose,
 }: {
   horario: string;
   days: CalendarDay[];
+  /** `YYYY-MM-DD` key of the current day in the house's time zone. */
+  today: string;
   onChoose: (iso: string) => void;
 }) {
   const byDay = useMemo(
@@ -226,6 +255,7 @@ function CalendarStep({
         <DayDialog
           day={openDay}
           colors={colors}
+          isToday={dayKey(openDay.iso) === today}
           onCancel={() => setOpen(null)}
           onChoose={() => onChoose(openDay.iso)}
         />
@@ -301,11 +331,14 @@ function ConfirmDialog({
 function DayDialog({
   day,
   colors,
+  isToday,
   onCancel,
   onChoose,
 }: {
   day: CalendarDay;
   colors: Map<string, NameColor>;
+  /** Whether the day being chosen is the current one. */
+  isToday: boolean;
   onCancel: () => void;
   onChoose: () => void;
 }) {
@@ -319,9 +352,14 @@ function DayDialog({
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h3
           id="dia-atendimento"
-          className="text-base font-semibold text-slate-900 first-letter:uppercase"
+          className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900 first-letter:uppercase"
         >
           {formatLongDate(day.iso)}
+          {isToday && (
+            <span className="rounded-full bg-sky-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+              Hoje
+            </span>
+          )}
         </h3>
         <p className="mt-0.5 text-xs text-slate-500">
           {formatShortDate(day.iso)} · {formatTime(day.iso)}

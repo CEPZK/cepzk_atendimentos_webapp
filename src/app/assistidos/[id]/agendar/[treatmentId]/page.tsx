@@ -17,6 +17,7 @@ import {
   CALENDAR_OCCURRENCES,
   dayKey,
   parseHorario,
+  todayKey,
   upcomingOccurrences,
 } from "@/lib/aca-agenda";
 import { ArrowLeftIcon } from "@/app/icons";
@@ -30,7 +31,7 @@ interface PageProps {
 }
 
 export const metadata: Metadata = {
-  title: "Agendar tratamento",
+  title: "Iniciar assistência",
 };
 
 /** PostgREST returns embedded rows as an object or as a single-item array. */
@@ -163,6 +164,11 @@ export default async function AgendarPage({
 
   const assistidoNome = one(treatment.assistido)?.nome_completo ?? "Assistido";
 
+  // A sessão do dia corrente é destacada entre as três. O dia é o da casa,
+  // calculado aqui (a página é dinâmica) para que servidor e browser
+  // destaquem sempre a mesma sessão — o mesmo critério do calendário.
+  const today = todayKey();
+
   // Os dados do tratamento acompanham o agendamento: quem escolhe os
   // procedimentos precisa ler a distonia e as queixas sem sair da tela.
   const treatmentData = {
@@ -185,7 +191,7 @@ export default async function AgendarPage({
       </Link>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-        Iniciar tratamento
+        Iniciar assistência
       </h1>
       <p className="mt-1 text-sm text-slate-500">
         {atendimento.setor} · {atendimento.horario}
@@ -201,6 +207,7 @@ export default async function AgendarPage({
           days={days}
           treatment={treatmentData}
           procedimentos={procedimentos ?? []}
+          today={today}
         />
       ) : (
         <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
