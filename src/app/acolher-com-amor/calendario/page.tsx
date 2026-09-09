@@ -12,6 +12,7 @@ import {
   CALENDAR_OCCURRENCES,
   dayKey,
   parseHorario,
+  todayKey,
   upcomingOccurrences,
 } from "@/lib/aca-agenda";
 import { ArrowLeftIcon } from "@/app/icons";
@@ -136,6 +137,10 @@ export default async function AcaCalendarPage() {
   const horarios =
     atendimentos.map((item) => item.horario).join(" · ") || "Acolher com Amor";
 
+  // O dia corrente na hora da casa: é ele que a tela marca como "hoje",
+  // tanto na grade quanto no dia aberto pelo voluntário.
+  const today = todayKey();
+
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
@@ -154,7 +159,7 @@ export default async function AcaCalendarPage() {
         agendados.
       </p>
 
-      <CalendarScreen days={days} horarios={horarios} />
+      <CalendarScreen days={days} horarios={horarios} today={today} />
     </main>
   );
 }

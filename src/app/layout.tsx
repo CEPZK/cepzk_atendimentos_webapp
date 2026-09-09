@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s · CEPZK",
   },
   description:
-    "Controle dos atendimentos de tratamentos da Casa Espírita CEPZK.",
+    "Controle dos atendimentos e das assistências da Casa Espírita CEPZK.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

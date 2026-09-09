@@ -9,7 +9,7 @@ const BUTTON_CLASS =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 /**
- * "Dar Alta" / "Iniciar Tratamento".
+ * "Dar Alta" / "Iniciar Assistência".
  *
  * The team that runs the treatment moves it forward from the assistido's
  * screen; the server action checks the escala again before writing.

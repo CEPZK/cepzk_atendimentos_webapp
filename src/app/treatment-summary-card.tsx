@@ -1,35 +1,31 @@
 import { PuzzlePieceIcon } from "@/app/icons";
 
-/** The treatment being scheduled/edited, as recorded at the registration. */
+/** What the registration recorded about the assistido's treatment. */
 export interface TreatmentSummary {
   distonia: string | null;
   queixas: string[];
   obs: string | null;
 }
 
+/** Whether there is anything at all to show about the assistido. */
+export function isTreatmentSummaryEmpty(treatment: TreatmentSummary): boolean {
+  return !treatment.distonia && treatment.queixas.length === 0 && !treatment.obs;
+}
+
 /**
- * What the Atendimento Fraterno recorded about this treatment.
+ * Distonia, queixas e observações do cadastro — os dados do assistido
+ * como são desenhados em toda parte.
  *
- * The procedures of each session are chosen from the distonia and the
- * complaints, so they are read here, next to the selects, instead of
- * forcing a trip back to the assistido's screen.
+ * Exportado à parte do card para que uma tela que já tem o seu próprio
+ * card (o relatório da sessão) mostre os mesmos dados sem repeti-los.
  */
-export function TreatmentSummaryCard({
+export function TreatmentSummaryDetails({
   treatment,
 }: {
   treatment: TreatmentSummary;
 }) {
-  const isEmpty =
-    !treatment.distonia && treatment.queixas.length === 0 && !treatment.obs;
-
-  if (isEmpty) return null;
-
   return (
-    <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-900">
-        Dados do tratamento
-      </h3>
-
+    <>
       {treatment.distonia && (
         <p className="mt-3 flex items-center gap-2 text-sm text-slate-700">
           <PuzzlePieceIcon className="h-4 w-4 shrink-0 text-sky-700" />
@@ -64,6 +60,33 @@ export function TreatmentSummaryCard({
           </p>
         </div>
       )}
+    </>
+  );
+}
+
+/**
+ * What the Atendimento Fraterno recorded about the assistido.
+ *
+ * The procedures of each session are chosen from the distonia and the
+ * complaints, so they are read here, next to the selects, instead of
+ * forcing a trip back to the assistido's screen. The card is titled after
+ * who the data describes — the assistido — which is how the Acolher com
+ * Amor team reads it.
+ */
+export function TreatmentSummaryCard({
+  treatment,
+}: {
+  treatment: TreatmentSummary;
+}) {
+  if (isTreatmentSummaryEmpty(treatment)) return null;
+
+  return (
+    <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h3 className="text-sm font-semibold text-slate-900">
+        Dados do assistido
+      </h3>
+
+      <TreatmentSummaryDetails treatment={treatment} />
     </section>
   );
 }

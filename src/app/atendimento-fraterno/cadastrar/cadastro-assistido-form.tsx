@@ -198,7 +198,7 @@ export function CadastroAssistidoForm({
         {assistido?.archived && (
           <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
             Este assistido está arquivado. Ao salvar, ele volta a ficar
-            ativo — os tratamentos arquivados continuam arquivados.
+            ativo — as assistências arquivadas continuam arquivadas.
           </p>
         )}
       </section>
@@ -206,10 +206,10 @@ export function CadastroAssistidoForm({
       {assistido && existingTreatments.length > 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">
-            Tratamentos já registrados
+            Assistências já registradas
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Estes tratamentos não podem ser removidos por aqui.
+            Estas assistências não podem ser removidas por aqui.
           </p>
 
           <ul className="mt-4 space-y-3">
@@ -284,16 +284,16 @@ export function CadastroAssistidoForm({
       {(!assistido || availableAtendimentos.length > 0) && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">
-            {assistido ? "Novos tratamentos" : "Tratamentos"}
+            {assistido ? "Novas assistências" : "Assistências"}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             {assistido
-              ? "Inclua os novos tratamentos do assistido."
-              : "O assistido precisa de ao menos um tratamento."}
+              ? "Inclua as novas assistências do assistido."
+              : "O assistido precisa de ao menos uma assistência."}
           </p>
           {activeExistingIds.size > 0 && (
             <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              Atendimentos que já têm um tratamento ativo não podem ser
+              Atendimentos que já têm uma assistência ativa não podem ser
               repetidos e não aparecem nas opções.
             </p>
           )}
@@ -336,7 +336,7 @@ export function CadastroAssistidoForm({
               className="mt-4 inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-sky-400 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600"
             >
               <PlusIcon className="h-5 w-5" />
-              Adicionar tratamento
+              Adicionar assistência
             </button>
           )}
         </section>
@@ -344,8 +344,8 @@ export function CadastroAssistidoForm({
 
       {assistido && availableAtendimentos.length === 0 && (
         <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm leading-relaxed text-slate-500">
-          Todos os atendimentos já têm um tratamento ativo: não há novos
-          tratamentos para incluir agora.
+          Todos os atendimentos já têm uma assistência ativa: não há novas
+          assistências para incluir agora.
         </p>
       )}
 

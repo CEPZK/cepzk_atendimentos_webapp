@@ -1,12 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACA_SECTOR,
   assistidoInitials,
   canRepeatAtendimento,
   compareNames,
+  DESOBSESSAO_INFANTIL_I_SECTOR,
+  DESOBSESSAO_INFANTIL_II_SECTOR,
+  DESOBSESSAO_INFANTIL_SECTOR,
+  ESTADO_ALTA,
+  ESTADO_EM_TRATAMENTO,
+  ESTADO_PENDENTE,
   findSimilarNames,
   NAME_MATCH_THRESHOLD,
   normalizeName,
   similarityReason,
+  treatmentStateAction,
   type Assistido,
 } from "./assistido";
 
@@ -330,5 +338,55 @@ describe("canRepeatAtendimento", () => {
 
   it("allows everything for a new assistido", () => {
     expect(canRepeatAtendimento([], 1)).toBe(true);
+  });
+});
+
+/**
+ * The button each team gets on the assistido's screen. The Acolher com
+ * Amor calls its treatments "assistências", and the label is the one the
+ * team reads — the Server Action allows the write by the same rule.
+ */
+describe("treatmentStateAction", () => {
+  it("starts the Acolher com Amor treatment as an assistência", () => {
+    expect(treatmentStateAction(ACA_SECTOR, ESTADO_PENDENTE)).toEqual({
+      nextState: ESTADO_EM_TRATAMENTO,
+      label: "Iniciar Assistência",
+    });
+  });
+
+  it("reads the sector and the state without case or accents", () => {
+    expect(treatmentStateAction("ACOLHER COM AMOR", "Pendente")?.label).toBe(
+      "Iniciar Assistência",
+    );
+  });
+
+  it("offers the start only while the treatment is waiting", () => {
+    expect(treatmentStateAction(ACA_SECTOR, ESTADO_EM_TRATAMENTO)).toBeNull();
+    expect(treatmentStateAction(ACA_SECTOR, ESTADO_ALTA)).toBeNull();
+  });
+
+  it("discharges the child in the Desobsessão Infantil", () => {
+    for (const setor of [
+      DESOBSESSAO_INFANTIL_SECTOR,
+      DESOBSESSAO_INFANTIL_I_SECTOR,
+      DESOBSESSAO_INFANTIL_II_SECTOR,
+    ]) {
+      expect(treatmentStateAction(setor, ESTADO_EM_TRATAMENTO)).toEqual({
+        nextState: ESTADO_ALTA,
+        label: "Dar Alta",
+      });
+    }
+  });
+
+  it("offers nothing once the child is discharged", () => {
+    expect(
+      treatmentStateAction(DESOBSESSAO_INFANTIL_I_SECTOR, ESTADO_ALTA),
+    ).toBeNull();
+  });
+
+  it("offers nothing for the other sectors", () => {
+    expect(
+      treatmentStateAction("Atendimento Fraterno", ESTADO_PENDENTE),
+    ).toBeNull();
   });
 });

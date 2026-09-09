@@ -96,13 +96,13 @@ export function TreatmentFields({
     });
   }
 
-  const fieldId = (name: string) => `tratamento-${index}-${name}`;
+  const fieldId = (name: string) => `assistencia-${index}-${name}`;
 
   return (
     <li className="rounded-xl border border-slate-200 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900">
-          Tratamento {index + 1}
+          Assistência {index + 1}
         </h3>
         {canRemove && (
           <button

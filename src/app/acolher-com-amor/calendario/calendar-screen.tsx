@@ -35,9 +35,15 @@ export interface CalendarDay {
 export function CalendarScreen({
   days,
   horarios,
+  today,
 }: {
   days: CalendarDay[];
   horarios: string;
+  /**
+   * `YYYY-MM-DD` key of the current day in the house's time zone, given by
+   * the page: the day that falls on it is marked as today's.
+   */
+  today: string;
 }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
 
@@ -68,6 +74,7 @@ export function CalendarScreen({
         <DayAgendaDialog
           day={openDay}
           colors={colors}
+          isToday={dayKey(openDay.iso) === today}
           onClose={() => setOpenKey(null)}
         />
       )}
@@ -79,10 +86,13 @@ export function CalendarScreen({
 function DayAgendaDialog({
   day,
   colors,
+  isToday,
   onClose,
 }: {
   day: CalendarDay;
   colors: Map<string, NameColor>;
+  /** Whether the day being read is the current one. */
+  isToday: boolean;
   onClose: () => void;
 }) {
   return (
@@ -95,9 +105,14 @@ function DayAgendaDialog({
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h3
           id="dia-agenda"
-          className="text-base font-semibold text-slate-900 first-letter:uppercase"
+          className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900 first-letter:uppercase"
         >
           {formatLongDate(day.iso)}
+          {isToday && (
+            <span className="rounded-full bg-sky-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+              Hoje
+            </span>
+          )}
         </h3>
         <p className="mt-0.5 text-xs text-slate-500">
           {formatShortDate(day.iso)} · {formatTime(day.iso)}

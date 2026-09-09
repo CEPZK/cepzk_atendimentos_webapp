@@ -1,7 +1,7 @@
 # CEPZK — Atendimentos (Webapp)
 
-Frontend do sistema de controle dos atendimentos de tratamentos da Casa
-Espírita CEPZK. Um **PWA** construído com [Next.js](https://nextjs.org)
+Frontend do sistema de controle dos atendimentos e das assistências da
+Casa Espírita CEPZK. Um **PWA** construído com [Next.js](https://nextjs.org)
 (App Router) e hospedado na [Vercel](https://vercel.com).
 
 > Convenção do projeto: aplicação em Português (BR); **código em inglês**,
@@ -154,10 +154,27 @@ e **telefone** são gravados direto na tabela.
 - **Ícones dos cards e das telas**: os arquivos de `public/icons/*.svg`
   são a fonte da arte e estão espelhados como componentes em
   `src/app/icons.tsx`, para herdarem `currentColor` sem custo de request.
-- **Pílulas de estado do tratamento**: mostram só o estado com a inicial
+- **Pílulas de estado da assistência**: mostram só o estado com a inicial
   maiúscula (sem o prefixo "Situação"), em tons pastéis —
-  pendente/amarelo, em tratamento/azul, alta/verde, expirado/vermelho.
-  As cores ficam em `TREATMENT_STATE_COLORS` (`src/lib/assistido.ts`).
+  pendente/amarelo, em assistência/azul, alta/verde, expirado/vermelho.
+  As cores ficam em `TREATMENT_STATE_COLORS` (`src/lib/assistido.ts`) e o
+  texto é o próprio valor gravado em `cepzk_tratamento.estado`.
+
+## Vocabulário
+
+A interface fala **assistência**; o banco e o código mantêm **tratamento**
+(`cepzk_tratamento`, `tratamento_id`, `tratamentoId`,
+`treatmentStateAction`…) — nomes de tabela, coluna e identificador não
+aparecem em tela nenhuma.
+
+Os **estados** não são traduzidos pelo frontend: a pílula mostra o valor
+gravado em `cepzk_tratamento.estado` com a inicial maiúscula, e é esse
+valor que as consultas e as transições comparam (`isState`,
+`canonicalState`). Renomear um estado é, portanto, uma migração no banco —
+feita ela, as telas passam a ler o nome novo sozinhas. O único ponto do
+frontend que conhece os valores é `src/lib/assistido.ts`: as constantes
+`ESTADO_*` (gravadas ao agendar e ao mudar a situação), a ordem
+(`TREATMENT_STATE_ORDER`) e as cores (`TREATMENT_STATE_COLORS`).
 
 ## Scripts
 

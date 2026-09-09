@@ -158,8 +158,11 @@ export function treatmentStateRank(estado: string | null | undefined): number {
 
 /**
  * The state as displayed on a chip — just the state, with a capitalized
- * first letter: "pendente" → "Pendente", "em tratamento" → "Em
- * tratamento". The word "Situação" is not repeated on every chip.
+ * first letter: "pendente" → "Pendente", "em assistência" → "Em
+ * assistência". The word "Situação" is not repeated on every chip.
+ *
+ * Nothing is translated here: the chip reads the value the database
+ * stores, so renaming a state is a migration, not a change of screen.
  */
 export function treatmentStateChip(estado: string): string {
   if (!estado) return estado;
@@ -180,7 +183,8 @@ export function treatmentStateColorClass(estado: string | null | undefined): str
  *
  * - Desobsessão Infantil discharges the child ("Dar Alta"), from any
  *   state that is not already an alta;
- * - Acolher com Amor starts a treatment that is still waiting.
+ * - Acolher com Amor starts a treatment that is still waiting — the app
+ *   calls its treatments "assistências", and so does the button.
  *
  * Used both by the screen (to draw the button) and by the Server Action
  * (to decide whether the write is allowed), so the two cannot drift.
@@ -193,7 +197,7 @@ export function treatmentStateAction(
     return { nextState: ESTADO_ALTA, label: "Dar Alta" };
   }
   if (isAcolherComAmor(setor) && isState(estado, ESTADO_PENDENTE)) {
-    return { nextState: ESTADO_EM_TRATAMENTO, label: "Iniciar Tratamento" };
+    return { nextState: ESTADO_EM_TRATAMENTO, label: "Iniciar Assistência" };
   }
   return null;
 }
