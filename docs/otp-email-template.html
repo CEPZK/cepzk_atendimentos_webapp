@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seu código de acesso</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background-color:#0284c7;padding:20px 24px;text-align:center;">
+              <div style="color:#ffffff;font-size:18px;font-weight:bold;">CEPZK · Atendimentos</div>
+              <div style="color:#e0f2fe;font-size:13px;margin-top:4px;">Acesso à plataforma</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 24px;color:#334155;font-size:15px;line-height:1.6;">
+              <p style="margin:0 0 8px;">Olá,</p>
+              <p style="margin:0 0 20px;">Use o código abaixo para entrar na plataforma. Ele expira em pouco tempo e só pode ser usado uma vez:</p>
+              <div style="text-align:center;margin:0 0 12px;">
+                <span style="display:inline-block;font-size:36px;font-weight:bold;letter-spacing:10px;text-indent:10px;color:#0f172a;background-color:#f1f5f9;border:1px dashed #94a3b8;border-radius:10px;padding:12px 24px;user-select:all;-webkit-user-select:all;">{{ .Token }}</span>
+              </div>
+              <p style="margin:0 0 20px;text-align:center;font-size:14px;color:#64748b;">Para copiar e colar: {{ .Token }}</p>
+              <p style="margin:0 0 20px;font-size:14px;color:#64748b;">Digite esse código na tela de login do aplicativo, no campo "código de acesso".</p>
+              <div style="border-top:1px solid #e2e8f0;margin:0 0 20px;"></div>
+              <p style="margin:0 0 12px;font-size:14px;color:#64748b;">Prefere entrar pelo navegador? Clique no botão:</p>
+              <div style="text-align:center;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background-color:#0284c7;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;border-radius:8px;padding:12px 28px;">Entrar na plataforma</a>
+              </div>
+              <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;">Se você não solicitou este acesso, ignore este e-mail.</p>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:12px;color:#94a3b8;margin:16px 0 0;">Casa Espírita CEPZK · mensagem automática, não responda</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
