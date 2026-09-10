@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Você foi convidado para o CEPZK · Atendimentos</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background-color:#0284c7;padding:20px 24px;text-align:center;">
+              <div style="color:#ffffff;font-size:18px;font-weight:bold;">CEPZK · Atendimentos</div>
+              <div style="color:#e0f2fe;font-size:13px;margin-top:4px;">Convite para a plataforma</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 24px;color:#334155;font-size:15px;line-height:1.6;">
+              <p style="margin:0 0 8px;">Olá,</p>
+              <p style="margin:0 0 20px;">Você foi convidado(a) para acessar a plataforma de Atendimentos da Casa Espírita CEPZK, usada pelos voluntários para acompanhar assistidos, escalas e atendimentos.</p>
+              <div style="text-align:center;margin:0 0 20px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background-color:#0284c7;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;border-radius:8px;padding:12px 28px;">Aceitar convite</a>
+              </div>
+              <p style="margin:0 0 8px;font-size:14px;color:#334155;"><strong>O que acontece depois:</strong></p>
+              <ol style="margin:0 0 20px;padding-left:20px;font-size:14px;color:#64748b;">
+                <li style="margin-bottom:6px;">Você completa seu nome e telefone no primeiro acesso;</li>
+                <li>No dia a dia, a entrada é com um código enviado para {{ .Email }} — sem senha para decorar.</li>
+              </ol>
+              <div style="border-top:1px solid #e2e8f0;margin:0 0 20px;"></div>
+              <p style="margin:0 0 12px;font-size:13px;color:#64748b;">Se o botão não funcionar, copie e cole este endereço no navegador:</p>
+              <p style="margin:0 0 20px;font-size:12px;color:#0284c7;word-break:break-all;">{{ .ConfirmationURL }}</p>
+              <p style="margin:0;font-size:12px;color:#94a3b8;">Este convite é pessoal e expira após algum tempo — aceite assim que possível. Se você não esperava este convite, ignore este e-mail.</p>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:12px;color:#94a3b8;margin:16px 0 0;">Casa Espírita CEPZK · mensagem automática, não responda</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
