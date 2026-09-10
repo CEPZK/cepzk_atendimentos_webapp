@@ -9,7 +9,7 @@ const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", {
 
 /**
  * The Acolher com Amor waiting list: read-only, ordered by how long each
- * assistido has been waiting (most recent update to their pendente
+ * assistido has been waiting (least recent update to their pendente
  * treatment first — see `buildAcaWaitlist`).
  */
 export function WaitlistList({

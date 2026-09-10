@@ -280,7 +280,8 @@ export interface AcaWaitlistItem extends Assistido {
 /**
  * The Acolher com Amor waiting list: assistidos whose next treatment —
  * the pendente treatment of lowest precedência — is the Acolher com
- * Amor, ordered by that treatment's `data_atualizacao`, descending.
+ * Amor, ordered by that treatment's `data_atualizacao`, ascending (the
+ * ones waiting the longest come first).
  *
  * A treatment only counts as "next" while it is still pendente: once it
  * moves to "em tratamento" or "alta" it stops competing for the lowest
@@ -327,8 +328,8 @@ export function buildAcaWaitlist(
 
   return waitlist.sort(
     (a, b) =>
-      new Date(b.dataAtualizacao).getTime() -
-        new Date(a.dataAtualizacao).getTime() ||
+      new Date(a.dataAtualizacao).getTime() -
+        new Date(b.dataAtualizacao).getTime() ||
       a.nome_completo.localeCompare(b.nome_completo, "pt-BR"),
   );
 }
