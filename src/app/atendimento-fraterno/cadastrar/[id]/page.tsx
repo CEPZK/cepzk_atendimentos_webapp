@@ -42,10 +42,22 @@ interface TreatmentRow {
   atendimento_id: number | null;
   atendimento: AtendimentoRow | AtendimentoRow[] | null;
   aca:
-    | { distonia: { nome: string } | { nome: string }[] | null }
-    | { distonia: { nome: string } | { nome: string }[] | null }[]
+    | {
+        distonia:
+          | { id: number; nome: string }
+          | { id: number; nome: string }[]
+          | null;
+      }
+    | {
+        distonia:
+          | { id: number; nome: string }
+          | { id: number; nome: string }[]
+          | null;
+      }[]
     | null;
-  queixas: { queixa: { nome: string } | { nome: string }[] | null }[] | null;
+  queixas:
+    | { queixa: { id: number; nome: string } | { id: number; nome: string }[] | null }[]
+    | null;
 }
 
 /**
@@ -70,7 +82,7 @@ const loadCadastro = cache(async (id: string) => {
     supabase
       .from("cepzk_tratamento")
       .select(
-        `id, estado, obs, data_arquivamento, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), aca:aca_tratamento (distonia:aca_distonia (nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (nome))`,
+        `id, estado, obs, data_arquivamento, atendimento_id, atendimento:cepzk_atendimento (${ATENDIMENTO_SELECT}), aca:aca_tratamento (distonia:aca_distonia (id, nome)), queixas:aca_tratamento_queixa (queixa:aca_queixa (id, nome))`,
       )
       .eq("assistido_id", id)
       .returns<TreatmentRow[]>(),
@@ -107,10 +119,14 @@ const loadCadastro = cache(async (id: string) => {
         archived: Boolean(row.data_arquivamento),
         obs: row.obs,
         distonia: one(one(row.aca)?.distonia)?.nome ?? null,
+        distoniaId: one(one(row.aca)?.distonia)?.id ?? null,
         queixas: (row.queixas ?? [])
           .map((item) => one(item.queixa)?.nome)
           .filter((nome): nome is string => Boolean(nome))
           .sort((a, b) => a.localeCompare(b, "pt-BR")),
+        queixaIds: (row.queixas ?? [])
+          .map((item) => one(item.queixa)?.id)
+          .filter((id): id is number => typeof id === "number"),
       };
     })
     // A precedência do atendimento manda: o mais prioritário primeiro.

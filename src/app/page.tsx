@@ -97,8 +97,7 @@ export default async function HomePage() {
       key: "aca-lista-espera",
       href: "/acolher-com-amor/lista-de-espera",
       title: "Lista de Espera para o Acolher com Amor",
-      description:
-        "Consultar os assistidos cuja próxima assistência é o Acolher com Amor.",
+      description: "Assistentes aptos a iniciar o atendimento.",
       icon: <ListHeartIcon />,
       // Só o próprio time do Acolher com Amor (mais o admin) acompanha
       // quem está esperando por ele.
@@ -108,8 +107,7 @@ export default async function HomePage() {
       key: "aca-calendario",
       href: "/acolher-com-amor/calendario",
       title: "Calendário do Acolher com Amor",
-      description:
-        "Ver as sessões agendadas e ajustar as assistências de cada assistido.",
+      description: "Consultar as sessões agendadas.",
       icon: <CalendarHeartIcon />,
       // Mesmo público da lista de espera: o time do Acolher com Amor
       // (mais o admin).
@@ -119,8 +117,7 @@ export default async function HomePage() {
       key: "aca-relatorios",
       href: "/acolher-com-amor/relatorios",
       title: "Relatório de Atendimentos",
-      description:
-        "Consultar os relatórios das sessões e registrar ponte, dirigente e observações.",
+      description: "Consultar e registrar relatório de sessões.",
       icon: <BookHeartIcon />,
       // Só o time do Acolher com Amor (e o admin) registra e consulta os
       // relatórios das sessões do Acolher com Amor.

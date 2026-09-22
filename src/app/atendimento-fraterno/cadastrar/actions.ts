@@ -6,12 +6,14 @@ import {
   ACA_SECTOR,
   ATENDIMENTO_FRATERNO,
   TEA_DISTONIA,
-  canRepeatAtendimento,
+  isFinalState,
+  ongoingSetors,
   type TreatmentInput,
 } from "@/lib/assistido";
 import {
   atendimentoLabel,
   mapAtendimento,
+  one,
   ATENDIMENTO_SELECT,
   type AtendimentoItem,
   type AtendimentoRow,
@@ -39,6 +41,32 @@ interface AssistidoRow {
   id: number;
   nome_completo: string;
   data_arquivamento: string | null;
+}
+
+interface ExistingTreatmentRow {
+  id: number;
+  estado: string;
+  atendimento:
+    | { setor: { nome: string } | null }
+    | { setor: { nome: string } | null }[]
+    | null;
+}
+
+interface TreatmentRowState {
+  id: number;
+  assistido_id: number;
+  estado: string;
+}
+
+/** Every screen that lists treatments has to refresh after a change. */
+function revalidateTreatmentPaths(assistidoId: number) {
+  revalidatePath(`/assistidos/${assistidoId}`);
+  revalidatePath(`/atendimento-fraterno/cadastrar/${assistidoId}`);
+  // Pendente treatments feed the Acolher com Amor waiting list…
+  revalidatePath("/acolher-com-amor/lista-de-espera");
+  // …and the Desobsessão Infantil lists depend on the treatments too.
+  revalidatePath("/desobsessao-infantil-i");
+  revalidatePath("/desobsessao-infantil-ii");
 }
 
 /**
@@ -84,11 +112,11 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
       >(),
       supabase
         .from("cepzk_tratamento")
-        .select("id, atendimento_id, data_arquivamento")
+        .select(
+          "id, estado, atendimento:cepzk_atendimento (setor:cepzk_setor (nome))",
+        )
         .eq("assistido_id", assistido.id)
-        .returns<
-          { id: number; atendimento_id: number | null; data_arquivamento: string | null }[]
-        >(),
+        .returns<ExistingTreatmentRow[]>(),
     ]);
 
   const atendimentos = new Map<number, AtendimentoItem>(
@@ -98,6 +126,16 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
   );
   const distoniaName = new Map((distonias ?? []).map((d) => [d.id, d.nome]));
   const seenAtendimentos = new Set<number>();
+
+  // Sectors with an open treatment: a second treatment in the same sector
+  // is refused no matter the atendimento or the horário. Alta/expirado
+  // treatments free the sector again.
+  const blockedSetors = ongoingSetors(
+    (existing ?? []).map((row) => ({
+      setor: one(row.atendimento)?.setor?.nome ?? "",
+      estado: row.estado,
+    })),
+  );
 
   for (const treatment of input.treatments) {
     if (!treatment.atendimentoId) {
@@ -125,14 +163,10 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
     }
     seenAtendimentos.add(atendimento.id);
 
-    // Repetir um atendimento que o assistido já tem só é possível quando
-    // todos os tratamentos existentes dele estiverem arquivados.
-    if (!canRepeatAtendimento(existing ?? [], atendimento.id)) {
+    if (blockedSetors.has(atendimento.setor)) {
       return {
         ok: false,
-        message: `Este assistido já tem uma assistência ativa para ${atendimentoLabel(
-          atendimento,
-        )}. Para incluir outro igual, arquive antes as assistências existentes.`,
+        message: `Este assistido já tem uma assistência em andamento no setor ${atendimento.setor}. Conclua-a (alta ou expirado) antes de incluir outra.`,
       };
     }
 
@@ -242,4 +276,204 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
   revalidatePath("/desobsessao-infantil-ii");
 
   return { ok: true, id: assistido.id, message: "Cadastro atualizado." };
+}
+
+export interface UpdateTreatmentInput {
+  treatmentId: number;
+  atendimentoId: number | null;
+  obs: string;
+  distoniaId: number | null;
+  queixaIds: number[];
+}
+
+/**
+ * Edits an open treatment (pendente/em tratamento) registered on this
+ * screen: the atendimento, the obs and the Acolher com Amor extras.
+ * Concluded treatments (alta/expirado) are history and stay untouched.
+ */
+export async function updateTreatment(
+  input: UpdateTreatmentInput,
+): Promise<ActionResult> {
+  const { supabase } = await requireDepartmentOnly(ATENDIMENTO_FRATERNO);
+
+  if (!input.atendimentoId) {
+    return { ok: false, message: "Escolha o atendimento da assistência." };
+  }
+
+  const { data: treatment, error: loadError } = await supabase
+    .from("cepzk_tratamento")
+    .select("id, assistido_id, estado")
+    .eq("id", input.treatmentId)
+    .maybeSingle<TreatmentRowState>();
+
+  if (loadError || !treatment) {
+    return { ok: false, message: "Assistência não encontrada." };
+  }
+
+  if (isFinalState(treatment.estado)) {
+    return {
+      ok: false,
+      message:
+        "Assistências concluídas (alta ou expirado) são histórico e não podem ser alteradas por aqui.",
+    };
+  }
+
+  const [{ data: atendimentoRows }, { data: distonias }, { data: siblings }] =
+    await Promise.all([
+      supabase
+        .from("cepzk_atendimento")
+        .select(ATENDIMENTO_SELECT)
+        .gt("precedencia", 0)
+        .returns<AtendimentoRow[]>(),
+      supabase.from("aca_distonia").select("id, nome").returns<
+        { id: number; nome: string }[]
+      >(),
+      supabase
+        .from("cepzk_tratamento")
+        .select(
+          "id, estado, atendimento:cepzk_atendimento (setor:cepzk_setor (nome))",
+        )
+        .eq("assistido_id", treatment.assistido_id)
+        .neq("id", treatment.id)
+        .returns<ExistingTreatmentRow[]>(),
+    ]);
+
+  const target = (atendimentoRows ?? [])
+    .map(mapAtendimento)
+    .find((item) => item.id === input.atendimentoId);
+  if (!target) {
+    return {
+      ok: false,
+      message: "Este atendimento não está disponível para assistência.",
+    };
+  }
+
+  const blockedSetors = ongoingSetors(
+    (siblings ?? []).map((row) => ({
+      setor: one(row.atendimento)?.setor?.nome ?? "",
+      estado: row.estado,
+    })),
+  );
+  if (blockedSetors.has(target.setor)) {
+    return {
+      ok: false,
+      message: `Este assistido já tem uma assistência em andamento no setor ${target.setor}. Conclua-a (alta ou expirado) antes de mover esta para lá.`,
+    };
+  }
+
+  if (target.setor === ACA_SECTOR && !input.distoniaId) {
+    return { ok: false, message: "Informe a distonia relatada." };
+  }
+
+  const { error: updateError } = await supabase
+    .from("cepzk_tratamento")
+    .update({
+      atendimento_id: input.atendimentoId,
+      obs: input.obs.trim() || null,
+    })
+    .eq("id", treatment.id);
+
+  if (updateError) {
+    return {
+      ok: false,
+      message: `Não foi possível atualizar (${updateError.code}: ${updateError.message}).`,
+    };
+  }
+
+  // The Acolher com Amor extras are rewritten from scratch: they only
+  // exist while the treatment stays in the sector.
+  await supabase
+    .from("aca_tratamento_queixa")
+    .delete()
+    .eq("tratamento_id", treatment.id);
+  await supabase.from("aca_tratamento").delete().eq("id", treatment.id);
+
+  if (target.setor === ACA_SECTOR) {
+    const { error: acaError } = await supabase
+      .from("aca_tratamento")
+      .insert({ id: treatment.id, distonia_id: input.distoniaId });
+
+    if (acaError) {
+      return {
+        ok: false,
+        message: `Não foi possível registrar a distonia (${acaError.code}: ${acaError.message}).`,
+      };
+    }
+
+    const distoniaName = new Map((distonias ?? []).map((d) => [d.id, d.nome]));
+    const isTea =
+      input.distoniaId !== null &&
+      distoniaName.get(input.distoniaId) === TEA_DISTONIA;
+    const queixaIds = isTea ? [...new Set(input.queixaIds)] : [];
+
+    if (queixaIds.length > 0) {
+      const { error: queixaError } = await supabase
+        .from("aca_tratamento_queixa")
+        .insert(
+          queixaIds.map((queixaId) => ({
+            tratamento_id: treatment.id,
+            queixa_id: queixaId,
+          })),
+        );
+
+      if (queixaError) {
+        return {
+          ok: false,
+          message: `Não foi possível registrar as queixas (${queixaError.code}: ${queixaError.message}).`,
+        };
+      }
+    }
+  }
+
+  revalidateTreatmentPaths(treatment.assistido_id);
+  return { ok: true, message: "Assistência atualizada." };
+}
+
+/**
+ * Removes an open treatment registered by mistake. Concluded treatments
+ * (alta/expirado) are history and cannot be removed here.
+ */
+export async function removeTreatment(
+  treatmentId: number,
+): Promise<ActionResult> {
+  const { supabase } = await requireDepartmentOnly(ATENDIMENTO_FRATERNO);
+
+  const { data: treatment, error: loadError } = await supabase
+    .from("cepzk_tratamento")
+    .select("id, assistido_id, estado")
+    .eq("id", treatmentId)
+    .maybeSingle<TreatmentRowState>();
+
+  if (loadError || !treatment) {
+    return { ok: false, message: "Assistência não encontrada." };
+  }
+
+  if (isFinalState(treatment.estado)) {
+    return {
+      ok: false,
+      message:
+        "Assistências concluídas (alta ou expirado) são histórico e não podem ser removidas por aqui.",
+    };
+  }
+
+  await supabase
+    .from("aca_tratamento_queixa")
+    .delete()
+    .eq("tratamento_id", treatment.id);
+  await supabase.from("aca_tratamento").delete().eq("id", treatment.id);
+
+  const { error: deleteError } = await supabase
+    .from("cepzk_tratamento")
+    .delete()
+    .eq("id", treatment.id);
+
+  if (deleteError) {
+    return {
+      ok: false,
+      message: `Não foi possível remover (${deleteError.code}: ${deleteError.message}).`,
+    };
+  }
+
+  revalidateTreatmentPaths(treatment.assistido_id);
+  return { ok: true, message: "Assistência removida." };
 }

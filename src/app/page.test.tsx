@@ -139,6 +139,9 @@ describe("home feature cards", () => {
     expect(html).toContain("Cadastrar um novo assistido ou alterar um existente.");
     expect(html).toContain("Assistidos em Desobsessão Infantil");
     expect(html).toContain("Consultar os assistidos em desobsessão infantil.");
+    expect(html).toContain("Assistentes aptos a iniciar o atendimento.");
+    expect(html).toContain("Consultar as sessões agendadas.");
+    expect(html).toContain("Consultar e registrar relatório de sessões.");
     // DI I keeps its own title; the old DI II wording is gone.
     expect(html).toContain("Assistentes em Desobsessão Infantil I");
     expect(html).not.toContain("Assistentes em Desobsessão Infantil II");

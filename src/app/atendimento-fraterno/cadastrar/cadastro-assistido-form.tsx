@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  isFinalState,
+  ongoingSetors,
   treatmentStateChip,
   treatmentStateColorClass,
   type CatalogItem,
@@ -18,6 +20,7 @@ import {
   TreatmentFields,
 } from "@/app/treatment-fields";
 import { saveAssistido } from "./actions";
+import { ExistingTreatmentEditor } from "./existing-treatment-editor";
 
 const PRIMARY_BUTTON =
   "w-full rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
@@ -37,7 +40,9 @@ export interface ExistingTreatmentView {
   obs: string | null;
   /** Acolher com Amor only. */
   distonia: string | null;
+  distoniaId: number | null;
   queixas: string[];
+  queixaIds: number[];
 }
 
 interface CadastroAssistidoFormProps {
@@ -82,25 +87,26 @@ export function CadastroAssistidoForm({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
-  // Atendimentos cujo tratamento ativo não pode ser repetido: eles não
-  // entram nas opções dos novos tratamentos.
-  const activeExistingIds = useMemo(
-    () =>
-      new Set(
-        existingTreatments
-          .filter(
-            (treatment) =>
-              !treatment.archived && treatment.atendimentoId !== null,
-          )
-          .map((treatment) => treatment.atendimentoId as number),
-      ),
+  // Setores com assistência em andamento bloqueiam novas assistências —
+  // não importa o atendimento ou o horário. Alta/expirado liberam o setor.
+  const blockedSetors = useMemo(
+    () => ongoingSetors(existingTreatments),
     [existingTreatments],
   );
 
   const availableAtendimentos = useMemo(
-    () => atendimentos.filter((item) => !activeExistingIds.has(item.id)),
-    [atendimentos, activeExistingIds],
+    () => atendimentos.filter((item) => !blockedSetors.has(item.setor)),
+    [atendimentos, blockedSetors],
   );
+
+  // The editor keeps the treatment's current atendimento as an option,
+  // on top of the unblocked catalogue.
+  function editorAtendimentos(treatment: ExistingTreatmentView) {
+    return atendimentos.filter(
+      (item) =>
+        item.id === treatment.atendimentoId || !blockedSetors.has(item.setor),
+    );
+  }
 
   // One treatment per atendimento among the new rows: adding more than
   // the (available) catalogue holds would only produce duplicates.
@@ -209,15 +215,18 @@ export function CadastroAssistidoForm({
             Assistências já registradas
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Estas assistências não podem ser removidas por aqui.
+            Assistências em andamento podem ser editadas ou removidas por
+            aqui; as concluídas (alta ou expirado) são histórico somente
+            leitura.
           </p>
 
-          <ul className="mt-4 space-y-3">
-            {existingTreatments.map((treatment) => (
-              <li
-                key={treatment.id}
-                className="rounded-xl border border-slate-200 p-4"
-              >
+          <div className="mt-4 space-y-3">
+            {existingTreatments.map((treatment) =>
+              isFinalState(treatment.estado) ? (
+                <div
+                  key={treatment.id}
+                  className="rounded-xl border border-slate-200 p-4"
+                >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold text-slate-900">
                     {treatment.setor}
@@ -254,14 +263,9 @@ export function CadastroAssistidoForm({
                     <p className="text-xs text-slate-500">
                       Principais queixas
                     </p>
-                    <ul className="mt-1 flex flex-wrap gap-1.5">
+                    <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-slate-700">
                       {treatment.queixas.map((queixa) => (
-                        <li
-                          key={queixa}
-                          className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
-                        >
-                          {queixa}
-                        </li>
+                        <li key={queixa}>{queixa}</li>
                       ))}
                     </ul>
                   </div>
@@ -275,9 +279,18 @@ export function CadastroAssistidoForm({
                     </p>
                   </div>
                 )}
-              </li>
-            ))}
-          </ul>
+                </div>
+              ) : (
+                <ExistingTreatmentEditor
+                  key={treatment.id}
+                  treatment={treatment}
+                  atendimentos={editorAtendimentos(treatment)}
+                  distonias={distonias}
+                  queixas={queixas}
+                />
+              ),
+            )}
+          </div>
         </section>
       )}
 
@@ -291,10 +304,10 @@ export function CadastroAssistidoForm({
               ? "Inclua as novas assistências do assistido."
               : "O assistido precisa de ao menos uma assistência."}
           </p>
-          {activeExistingIds.size > 0 && (
+          {blockedSetors.size > 0 && (
             <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              Atendimentos que já têm uma assistência ativa não podem ser
-              repetidos e não aparecem nas opções.
+              Setores com assistência em andamento não aparecem nas opções;
+              assistências concluídas (alta ou expirado) liberam o setor.
             </p>
           )}
 
@@ -344,8 +357,8 @@ export function CadastroAssistidoForm({
 
       {assistido && availableAtendimentos.length === 0 && (
         <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm leading-relaxed text-slate-500">
-          Todos os atendimentos já têm uma assistência ativa: não há novas
-          assistências para incluir agora.
+          Todos os setores deste assistido têm assistência em andamento: não
+          há novas assistências para incluir agora.
         </p>
       )}
 

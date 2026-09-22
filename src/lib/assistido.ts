@@ -137,6 +137,24 @@ export function isState(estado: string, expected: string): boolean {
   return canonicalState(estado) === canonicalState(expected);
 }
 
+/** Alta and expirado close the treatment; anything else keeps it open. */
+export function isFinalState(estado: string | null | undefined): boolean {
+  return isState(estado ?? "", ESTADO_ALTA) || isState(estado ?? "", ESTADO_EXPIRADO);
+}
+
+/**
+ * Sectors with a treatment still open: while one of them is not in alta
+ * or expirado, the assistido cannot start another treatment in the same
+ * sector — no matter the atendimento or the horário.
+ */
+export function ongoingSetors(
+  rows: { setor: string; estado: string | null }[],
+): Set<string> {
+  return new Set(
+    rows.filter((row) => !isFinalState(row.estado)).map((row) => row.setor),
+  );
+}
+
 /**
  * Sort key: pendente, em tratamento, alta.
  *
