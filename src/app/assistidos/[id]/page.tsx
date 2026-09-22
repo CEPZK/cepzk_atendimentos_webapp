@@ -40,12 +40,8 @@ const BACK_TARGETS: Record<string, { href: string; label: string }> = {
     href: "/acolher-com-amor/lista-de-espera",
     label: "Lista de Espera",
   },
-  "di-i": {
-    href: "/desobsessao-infantil-i",
-    label: "Assistentes em Desobsessão Infantil I",
-  },
-  "di-ii": {
-    href: "/desobsessao-infantil-ii",
+  di: {
+    href: "/desobsessao-infantil",
     label: "Assistidos em Desobsessão Infantil",
   },
 };

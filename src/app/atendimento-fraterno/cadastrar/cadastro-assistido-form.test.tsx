@@ -38,7 +38,7 @@ const atendimentos = [
   {
     id: 2,
     setorId: 20,
-    setor: "Desobsessão Infantil II",
+    setor: "Desobsessão Infantil",
     departamento: "Mediúnica",
     horario: "Terças · 9h",
     precedencia: 2,
@@ -46,7 +46,7 @@ const atendimentos = [
   {
     id: 3,
     setorId: 20,
-    setor: "Desobsessão Infantil II",
+    setor: "Desobsessão Infantil",
     departamento: "Mediúnica",
     horario: "Quintas · 9h",
     precedencia: 2,
@@ -71,7 +71,7 @@ const existingTreatments = [
   {
     id: 12,
     atendimentoId: 2,
-    setor: "Desobsessão Infantil II",
+    setor: "Desobsessão Infantil",
     horario: "Terças · 9h",
     precedencia: 2,
     estado: "alta",
@@ -125,10 +125,10 @@ describe("CadastroAssistidoForm", () => {
     // Acolher com Amor has a treatment in progress: no horário of the
     // sector may be offered again.
     expect(html).not.toContain("Acolher com Amor — Segundas · 15h");
-    // Desobsessão Infantil II is concluded (alta): both horários return
+    // Desobsessão Infantil is concluded (alta): both horários return
     // to the options.
-    expect(html).toContain("Desobsessão Infantil II — Terças · 9h");
-    expect(html).toContain("Desobsessão Infantil II — Quintas · 9h");
+    expect(html).toContain("Desobsessão Infantil — Terças · 9h");
+    expect(html).toContain("Desobsessão Infantil — Quintas · 9h");
     expect(html).toContain(
       "Setores com assistência em andamento não aparecem nas opções",
     );

@@ -51,7 +51,7 @@ function volunteerSession(papel: "admin" | "coordenador"): CurrentVolunteer {
 
 const SECTORS: VolunteerSector[] = [
   { id: 1, nome: "Acolher com Amor", departamento: "Assistência" },
-  { id: 2, nome: "Desobsessão Infantil I", departamento: "Mediunidade" },
+  { id: 2, nome: "Desobsessão Infantil", departamento: "Mediunidade" },
 ];
 
 /** Renders the home page and drops the SSR text-node separators. */
@@ -84,11 +84,11 @@ describe("home header", () => {
       '<span class="block">Coordenador · Acolher com Amor</span>',
     );
     expect(html).toContain(
-      '<span class="block">Coordenador · Desobsessão Infantil I</span>',
+      '<span class="block">Coordenador · Desobsessão Infantil</span>',
     );
     // No count, and no standalone sector capsules.
     expect(html).not.toContain("2 setores");
-    expect(html).not.toContain('class="block">Desobsessão Infantil I</span>');
+    expect(html).not.toContain('class="block">Desobsessão Infantil</span>');
   });
 
   it("shows a single pair line when there is a single sector", async () => {
@@ -97,7 +97,7 @@ describe("home header", () => {
     const html = await renderHome();
 
     expect(html).toContain("Coordenador · Acolher com Amor");
-    expect(html).not.toContain("Desobsessão Infantil I");
+    expect(html).not.toContain("Desobsessão Infantil");
   });
 
   it("omits the sector count when the volunteer has no sectors", async () => {
@@ -130,7 +130,7 @@ describe("home feature cards", () => {
     expect(html).toContain("Lista de Assistidos");
   });
 
-  it("uses the updated copy for the cadastro and DI II cards", async () => {
+  it("uses the updated copy for the cadastro, DI and ACA cards", async () => {
     vi.mocked(belongsToDepartment).mockReturnValue(true);
     vi.mocked(belongsToSector).mockReturnValue(true);
 
@@ -142,8 +142,7 @@ describe("home feature cards", () => {
     expect(html).toContain("Assistentes aptos a iniciar o atendimento.");
     expect(html).toContain("Consultar as sessões agendadas.");
     expect(html).toContain("Consultar e registrar relatório de sessões.");
-    // DI I keeps its own title; the old DI II wording is gone.
-    expect(html).toContain("Assistentes em Desobsessão Infantil I");
-    expect(html).not.toContain("Assistentes em Desobsessão Infantil II");
+    // The I/II sectors no longer exist: only one DI card remains.
+    expect(html).not.toContain("Desobsessão Infantil I");
   });
 });

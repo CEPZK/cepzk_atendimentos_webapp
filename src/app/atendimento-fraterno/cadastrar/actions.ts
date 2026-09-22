@@ -65,8 +65,7 @@ function revalidateTreatmentPaths(assistidoId: number) {
   // Pendente treatments feed the Acolher com Amor waiting list…
   revalidatePath("/acolher-com-amor/lista-de-espera");
   // …and the Desobsessão Infantil lists depend on the treatments too.
-  revalidatePath("/desobsessao-infantil-i");
-  revalidatePath("/desobsessao-infantil-ii");
+  revalidatePath("/desobsessao-infantil");
 }
 
 /**
@@ -272,8 +271,7 @@ export async function saveAssistido(input: SaveInput): Promise<SaveResult> {
   // Os novos tratamentos pendentes entram na fila do Acolher com Amor.
   revalidatePath("/acolher-com-amor/lista-de-espera");
   // As listas da Desobsessão Infantil também dependem dos tratamentos.
-  revalidatePath("/desobsessao-infantil-i");
-  revalidatePath("/desobsessao-infantil-ii");
+  revalidatePath("/desobsessao-infantil");
 
   return { ok: true, id: assistido.id, message: "Cadastro atualizado." };
 }

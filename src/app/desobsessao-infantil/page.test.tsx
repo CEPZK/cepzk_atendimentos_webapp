@@ -23,7 +23,7 @@ vi.mock("next/link", () => ({
   }) => React.createElement("a", { href, className }, children),
 }));
 
-import DesobsessaoInfantilIIPage from "./page";
+import DesobsessaoInfantilPage from "./page";
 import {
   loadVolunteerSectors,
   requireVolunteer,
@@ -51,19 +51,19 @@ beforeEach(() => {
     },
   });
   vi.mocked(loadVolunteerSectors).mockResolvedValue([
-    { id: 2, nome: "Desobsessão Infantil II", departamento: "Infância" },
+    { id: 2, nome: "Desobsessão Infantil", departamento: "Infância" },
   ] as VolunteerSector[]);
 });
 
-describe("DI II list screen", () => {
+describe("Desobsessão Infantil list screen", () => {
   it("shows the new title and no subtitle", async () => {
-    const html = renderToString(await DesobsessaoInfantilIIPage()).replaceAll(
+    const html = renderToString(await DesobsessaoInfantilPage()).replaceAll(
       "<!-- -->",
       "",
     );
 
     expect(html).toContain(">Assistidos em Desobsessão Infantil</h1>");
-    expect(html).not.toContain("Assistentes em Desobsessão Infantil II");
+    expect(html).not.toContain("Desobsessão Infantil II");
     expect(html).not.toContain("ordenados alfabeticamente");
   });
 });

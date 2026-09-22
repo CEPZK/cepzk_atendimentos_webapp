@@ -9,8 +9,7 @@ import { isAdmin, initials, ROLE_LABELS } from "@/lib/volunteer";
 import {
   ACA_SECTOR,
   ATENDIMENTO_FRATERNO,
-  DESOBSESSAO_INFANTIL_I_SECTOR,
-  DESOBSESSAO_INFANTIL_II_SECTOR,
+  DESOBSESSAO_INFANTIL_SECTOR,
 } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
 import { ProfileMenu } from "@/app/profile-menu";
@@ -70,28 +69,12 @@ export default async function HomePage() {
       isVisible: belongsToDepartment(sectors, ATENDIMENTO_FRATERNO),
     },
     {
-      key: "di-i",
-      href: "/desobsessao-infantil-i",
-      title: "Assistentes em Desobsessão Infantil I",
-      description:
-        "Consultar os assistidos com assistência ativa da Desobsessão Infantil I.",
-      icon: <UserListIcon />,
-      isVisible:
-        belongsToSector(sectors, DESOBSESSAO_INFANTIL_I_SECTOR) ||
-        // Compatibilidade com setor legado "Desobsessão Infantil" (sem sufixo).
-        sectors.some(
-          (s) =>
-            s.nome === "Desobsessão Infantil" &&
-            !belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
-        ),
-    },
-    {
-      key: "di-ii",
-      href: "/desobsessao-infantil-ii",
+      key: "di",
+      href: "/desobsessao-infantil",
       title: "Assistidos em Desobsessão Infantil",
       description: "Consultar os assistidos em desobsessão infantil.",
       icon: <UserListIcon />,
-      isVisible: belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
+      isVisible: belongsToSector(sectors, DESOBSESSAO_INFANTIL_SECTOR),
     },
     {
       key: "aca-lista-espera",

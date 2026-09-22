@@ -216,7 +216,7 @@ export function UserPlusIcon({ className = "h-6 w-6" }: IconProps) {
   );
 }
 
-/** `public/icons/user-list.svg` — Assistidos em Desobsessão Infantil I/II. */
+/** `public/icons/user-list.svg` — Assistidos em Desobsessão Infantil. */
 export function UserListIcon({ className = "h-6 w-6" }: IconProps) {
   return (
     <svg className={className} {...phosphor}>
