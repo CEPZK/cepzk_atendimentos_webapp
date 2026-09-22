@@ -72,18 +72,27 @@ describe("home header", () => {
     expect(html).not.toContain("CEPZK · Atendimentos</p>");
   });
 
-  it("summarizes role and sectors in a single line instead of capsules", async () => {
+  it("lists one {role} · {sector} pair per line instead of capsules", async () => {
     const html = await renderHome();
 
-    expect(html).toContain("Coordenador · 2 setores");
-    // Sector names no longer appear as individual capsules.
-    expect(html).not.toContain("Desobsessão Infantil I</span>");
+    expect(html).toContain(
+      '<span class="block">Coordenador · Acolher com Amor</span>',
+    );
+    expect(html).toContain(
+      '<span class="block">Coordenador · Desobsessão Infantil I</span>',
+    );
+    // No count, and no standalone sector capsules.
+    expect(html).not.toContain("2 setores");
+    expect(html).not.toContain('class="block">Desobsessão Infantil I</span>');
   });
 
-  it("uses the singular when there is a single sector", async () => {
+  it("shows a single pair line when there is a single sector", async () => {
     vi.mocked(loadVolunteerSectors).mockResolvedValue(SECTORS.slice(0, 1));
 
-    expect(await renderHome()).toContain("Coordenador · 1 setor");
+    const html = await renderHome();
+
+    expect(html).toContain("Coordenador · Acolher com Amor");
+    expect(html).not.toContain("Desobsessão Infantil I");
   });
 
   it("omits the sector count when the volunteer has no sectors", async () => {

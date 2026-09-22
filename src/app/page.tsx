@@ -129,17 +129,10 @@ export default async function HomePage() {
     },
   ].filter((card) => card.isVisible);
 
-  // "1 setor" / "N setores", shown next to the role under the app bar;
-  // the old per-sector capsules are gone with the redesign.
-  const sectorSummary =
-    sectors.length === 0
-      ? null
-      : `${sectors.length} ${sectors.length === 1 ? "setor" : "setores"}`;
-
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 p-6">
-      <header className="sticky top-0 z-10 -mx-6 -mt-6 mb-5 border-b border-slate-200 bg-white/90 px-6 py-3 backdrop-blur">
-        <div className="flex items-center gap-3">
+    <>
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-6 py-3">
           <span
             aria-hidden="true"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-600 text-sm font-semibold text-white"
@@ -152,32 +145,43 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <p className="text-sm text-slate-500">
-        {ROLE_LABELS[volunteer.papel]}
-        {sectorSummary ? ` · ${sectorSummary}` : null}
-      </p>
+      <main className="mx-auto w-full max-w-2xl flex-1 p-6">
+        <p className="text-sm text-slate-500">
+          {sectors.length === 0 ? (
+            ROLE_LABELS[volunteer.papel]
+          ) : (
+            // One "{role} · {sector}" pair per line: the schedule is what
+            // releases features, so each sector is a pairing, not a count.
+            sectors.map((sector) => (
+              <span key={sector.id} className="block">
+                {`${ROLE_LABELS[volunteer.papel]} · ${sector.nome}`}
+              </span>
+            ))
+          )}
+        </p>
 
-      <section className="mt-6">
-        {cards.length > 0 ? (
-          <div className="grid gap-3">
-            {cards.map((card) => (
-              <FeatureCard
-                key={card.key}
-                href={card.href}
-                title={card.title}
-                description={card.description}
-                icon={card.icon}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm leading-relaxed text-slate-500">
-            Nenhuma funcionalidade disponível para o seu perfil ainda. Assim
-            que novas atividades forem liberadas para o seu setor, elas
-            aparecerão aqui.
-          </p>
-        )}
-      </section>
-    </main>
+        <section className="mt-6">
+          {cards.length > 0 ? (
+            <div className="grid gap-3">
+              {cards.map((card) => (
+                <FeatureCard
+                  key={card.key}
+                  href={card.href}
+                  title={card.title}
+                  description={card.description}
+                  icon={card.icon}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm leading-relaxed text-slate-500">
+              Nenhuma funcionalidade disponível para o seu perfil ainda. Assim
+              que novas atividades forem liberadas para o seu setor, elas
+              aparecerão aqui.
+            </p>
+          )}
+        </section>
+      </main>
+    </>
   );
 }
