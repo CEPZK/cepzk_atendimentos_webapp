@@ -34,11 +34,9 @@ export interface CalendarDay {
  */
 export function CalendarScreen({
   days,
-  horarios,
   today,
 }: {
   days: CalendarDay[];
-  horarios: string;
   /**
    * `YYYY-MM-DD` key of the current day in the house's time zone, given by
    * the page: the day that falls on it is marked as today's.
@@ -62,7 +60,6 @@ export function CalendarScreen({
     <>
       <AcaMonthCalendar
         title="Sessões do Acolher com Amor"
-        description={`Só os dias de atendimento (${horarios}) têm sessões.`}
         days={days.map((day) => ({
           iso: day.iso,
           assistidos: day.assistidos.map((item) => item.nome),
@@ -100,7 +97,7 @@ function DayAgendaDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="dia-agenda"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
     >
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h3

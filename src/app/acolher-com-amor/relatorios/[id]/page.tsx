@@ -31,8 +31,7 @@ const CARD_CLASS =
  *
  * Além do que a sessão registrou (procedimentos, dirigente, ponte e
  * observações), a tela traz os dados do assistido que o cadastro
- * registrou: distonia, queixas e observações, mais as assistências que
- * ele tem nos outros setores. Tudo numa leitura só.
+ * registrou: distonia, queixas e observações. Tudo numa leitura só.
  */
 export default async function RelatorioPage({ params }: PageProps) {
   const { id } = await params;
@@ -147,31 +146,6 @@ export default async function RelatorioPage({ params }: PageProps) {
             </p>
           )}
         </div>
-      </section>
-
-      <section className={CARD_CLASS}>
-        <h2 className="text-base font-semibold text-slate-900">
-          Assistências
-          {relatorio.tratamentos.length > 0 &&
-            ` (${relatorio.tratamentos.length})`}
-        </h2>
-
-        {relatorio.tratamentos.length > 0 ? (
-          <ul className="mt-3 flex flex-wrap gap-1.5">
-            {relatorio.tratamentos.map((tratamento) => (
-              <li
-                key={tratamento}
-                className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
-              >
-                {tratamento}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-slate-500">
-            Nenhuma assistência registrada.
-          </p>
-        )}
       </section>
     </main>
   );

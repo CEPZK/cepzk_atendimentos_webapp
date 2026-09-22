@@ -23,7 +23,8 @@ export interface AgendaDay {
 
 interface AcaMonthCalendarProps {
   title: string;
-  description: string;
+  /** Optional subtext under the title. */
+  description?: string;
   days: AgendaDay[];
   /** Called with the `YYYY-MM-DD` key of the day the volunteer clicked. */
   onSelectDay: (key: string) => void;
@@ -123,7 +124,9 @@ export function AcaMonthCalendar({
     return (
       <section className="mt-6">
         <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
+        {description && (
+          <p className="mt-1 text-sm text-slate-500">{description}</p>
+        )}
         <p className="mt-4 text-sm text-slate-500">
           Nenhuma data disponível.
         </p>
@@ -134,7 +137,9 @@ export function AcaMonthCalendar({
   return (
     <section className="mt-6">
       <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-      <p className="mt-1 text-sm text-slate-500">{description}</p>
+      {description && (
+        <p className="mt-1 text-sm text-slate-500">{description}</p>
+      )}
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">

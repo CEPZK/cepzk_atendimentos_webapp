@@ -44,7 +44,7 @@ export function ConfirmDialog({
           onCancel();
         }
       }}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
     >
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
         <h3 className="text-base font-semibold text-slate-900">{title}</h3>

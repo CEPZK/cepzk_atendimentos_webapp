@@ -12,6 +12,17 @@ export const metadata: Metadata = {
   title: "Relatório de Atendimentos — Acolher com Amor",
 };
 
+/** O botão de registrar: fica abaixo da busca, acima da lista. */
+const registerLink = (
+  <Link
+    href="/acolher-com-amor/relatorios/novo"
+    className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
+  >
+    <PlusIcon className="h-5 w-5" />
+    Registrar Relatório
+  </Link>
+);
+
 export default async function RelatoriosPage() {
   // Só o time do Acolher com Amor (e o admin) acompanha os relatórios.
   const { supabase } = await requireSector(ACA_SECTOR);
@@ -31,26 +42,17 @@ export default async function RelatoriosPage() {
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
         Relatório de Atendimentos
       </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Relatórios das sessões do Acolher com Amor, dos mais recentes aos
-        mais antigos.
-      </p>
-
-      <Link
-        href="/acolher-com-amor/relatorios/novo"
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
-      >
-        <PlusIcon className="h-5 w-5" />
-        Registrar Relatório
-      </Link>
 
       {error ? (
-        <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          Não foi possível carregar os relatórios ({error.code}: {error.message}
-          ).
-        </p>
+        <>
+          <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Não foi possível carregar os relatórios ({error.code}:{" "}
+            {error.message}).
+          </p>
+          <div className="mt-4">{registerLink}</div>
+        </>
       ) : (
-        <ReportsList relatorios={relatorios} />
+        <ReportsList relatorios={relatorios} action={registerLink} />
       )}
     </main>
   );

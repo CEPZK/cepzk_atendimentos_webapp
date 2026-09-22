@@ -78,10 +78,6 @@ export default async function AcaWaitlistPage() {
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
         Lista de Espera para o Acolher com Amor
       </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Assistidos cuja próxima assistência é o Acolher com Amor, dos mais
-        antigos aos mais recentes na espera.
-      </p>
 
       {error ? (
         <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
