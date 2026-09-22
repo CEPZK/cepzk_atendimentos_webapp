@@ -9,6 +9,7 @@ import {
   type TreatmentInput,
 } from "@/lib/assistido";
 import type { AtendimentoItem } from "@/lib/atendimento";
+import { ConfirmDialog } from "@/app/confirm-dialog";
 import { PuzzlePieceIcon } from "@/app/icons";
 import { TreatmentFields } from "@/app/treatment-fields";
 import { removeTreatment, updateTreatment } from "./actions";
@@ -57,6 +58,7 @@ export function ExistingTreatmentEditor({
     obs: treatment.obs ?? "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   function handleSave() {
     setError(null);
@@ -79,16 +81,10 @@ export function ExistingTreatmentEditor({
   }
 
   function handleRemove() {
-    if (
-      !window.confirm(
-        `Remover a assistência de ${treatment.setor}? Essa ação não pode ser desfeita.`,
-      )
-    ) {
-      return;
-    }
     setError(null);
     startTransition(async () => {
       const result = await removeTreatment(treatment.id);
+      setConfirmingRemove(false);
       if (!result.ok) {
         setError(result.message ?? "Não foi possível remover.");
         return;
@@ -171,11 +167,11 @@ export function ExistingTreatmentEditor({
             </button>
             <button
               type="button"
-              onClick={handleRemove}
+              onClick={() => setConfirmingRemove(true)}
               disabled={isPending}
               className={REMOVE_BUTTON}
             >
-              {isPending ? "Removendo..." : "Remover"}
+              Remover
             </button>
           </div>
 
@@ -218,6 +214,18 @@ export function ExistingTreatmentEditor({
         >
           {error}
         </p>
+      )}
+
+      {confirmingRemove && (
+        <ConfirmDialog
+          title="Remover assistência?"
+          description={`A assistência de ${treatment.setor} (${treatment.horario}) será excluída. Essa ação não pode ser desfeita.`}
+          confirmLabel="Remover"
+          pendingLabel="Removendo..."
+          isPending={isPending}
+          onConfirm={handleRemove}
+          onCancel={() => setConfirmingRemove(false)}
+        />
       )}
     </li>
   );

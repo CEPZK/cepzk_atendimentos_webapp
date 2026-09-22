@@ -129,9 +129,10 @@ export function CadastrarAssistidoFlow({
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            Encontrei esses nomes no sistema. Escolha um assistido já
-            cadastrado para continuar o cadastro dele, ou siga com o nome
-            digitado.
+            Encontrei esses nomes no sistema.
+            <br />
+            Escolha um assistido já cadastrado para edição, ou siga com o
+            nome digitado.
           </p>
 
           <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
