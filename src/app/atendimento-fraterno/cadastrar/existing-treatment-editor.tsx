@@ -72,11 +72,20 @@ export function ExistingTreatmentEditor({
         setError(result.message ?? "Não foi possível salvar.");
         return;
       }
+      // Back to the read-only summary; refresh() brings the saved values.
+      setEditing(false);
       router.refresh();
     });
   }
 
   function handleRemove() {
+    if (
+      !window.confirm(
+        `Remover a assistência de ${treatment.setor}? Essa ação não pode ser desfeita.`,
+      )
+    ) {
+      return;
+    }
     setError(null);
     startTransition(async () => {
       const result = await removeTreatment(treatment.id);
@@ -143,7 +152,18 @@ export function ExistingTreatmentEditor({
             <span className="flex-1" />
             <button
               type="button"
-              onClick={() => setEditing(true)}
+              onClick={() => {
+                // Re-seed from the freshest props (a previous save may
+                // have refreshed them while the summary was shown).
+                setDraft({
+                  atendimentoId: treatment.atendimentoId,
+                  distoniaId: treatment.distoniaId,
+                  queixaIds: treatment.queixaIds,
+                  obs: treatment.obs ?? "",
+                });
+                setError(null);
+                setEditing(true);
+              }}
               disabled={isPending}
               className={ACTION_BUTTON}
             >

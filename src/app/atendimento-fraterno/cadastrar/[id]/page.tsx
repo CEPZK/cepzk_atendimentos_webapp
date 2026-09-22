@@ -180,7 +180,7 @@ export default async function CadastrarAssistidoPage({ params }: PageProps) {
         Cadastrar assistido
       </h1>
       <p className="mt-1 text-sm text-slate-500">
-        Continuando o cadastro de um assistido já registrado.
+        Editar assistido cadastrado.
       </p>
 
       <CadastroAssistidoForm
