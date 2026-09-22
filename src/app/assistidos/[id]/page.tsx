@@ -12,7 +12,6 @@ import {
   treatmentStateRank,
   type Assistido,
 } from "@/lib/assistido";
-import { fullName, type VolunteerProfile } from "@/lib/volunteer";
 import {
   mapAtendimento,
   ATENDIMENTO_SELECT,
@@ -47,7 +46,7 @@ const BACK_TARGETS: Record<string, { href: string; label: string }> = {
   },
   "di-ii": {
     href: "/desobsessao-infantil-ii",
-    label: "Assistentes em Desobsessão Infantil II",
+    label: "Assistidos em Desobsessão Infantil",
   },
 };
 const DEFAULT_BACK_TARGET = { href: "/assistidos", label: "Assistidos" };
@@ -60,13 +59,6 @@ function resolveBackTarget(from: string | undefined) {
 function one<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
-}
-
-interface AssistidoRow extends Assistido {
-  entrevistador:
-    | Pick<VolunteerProfile, "nome" | "sobrenome">
-    | Pick<VolunteerProfile, "nome" | "sobrenome">[]
-    | null;
 }
 
 interface TreatmentRow {
@@ -100,8 +92,6 @@ interface VisibleTreatment {
   actionHref: string | null;
 }
 
-const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
-
 /**
  * Read once per request: the page and `generateMetadata` ask for the same
  * assistido, and each extra round trip is felt as a slower screen.
@@ -113,11 +103,9 @@ const loadAssistido = cache(async (id: string) => {
   const [assistido, treatments] = await Promise.all([
     supabase
       .from("cepzk_assistido")
-      .select(
-        "id, nome_completo, data_criacao, entrevistador:cepzk_voluntario (nome, sobrenome)",
-      )
+      .select("id, nome_completo")
       .eq("id", id)
-      .maybeSingle<AssistidoRow>(),
+      .maybeSingle<Assistido>(),
     supabase
       .from("cepzk_tratamento")
       .select(
@@ -219,8 +207,6 @@ export default async function AssistidoPage({
         a.horario.localeCompare(b.horario, "pt-BR"),
     );
 
-  const interviewer = one(assistido.entrevistador);
-
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
@@ -234,39 +220,6 @@ export default async function AssistidoPage({
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
         {assistido.nome_completo}
       </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Consulta somente leitura: estes dados não podem ser alterados por aqui.
-      </p>
-
-      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">Dados</h2>
-        <dl className="mt-4 space-y-4 text-sm">
-          <div>
-            <dt className="text-slate-500">Nome completo</dt>
-            <dd className="mt-0.5 font-medium text-slate-900">
-              {assistido.nome_completo}
-            </dd>
-          </div>
-          {access.isFull && (
-            <>
-              <div>
-                <dt className="text-slate-500">Entrevistador</dt>
-                <dd className="mt-0.5 font-medium text-slate-900">
-                  {interviewer ? fullName(interviewer) || "—" : "—"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Cadastrado em</dt>
-                <dd className="mt-0.5 font-medium text-slate-900">
-                  {assistido.data_criacao
-                    ? DATE_FORMAT.format(new Date(assistido.data_criacao))
-                    : "—"}
-                </dd>
-              </div>
-            </>
-          )}
-        </dl>
-      </section>
 
       <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">

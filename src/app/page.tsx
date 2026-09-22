@@ -63,8 +63,7 @@ export default async function HomePage() {
       key: "atendimento-fraterno-cadastrar",
       href: "/atendimento-fraterno/cadastrar",
       title: "Cadastrar Assistido",
-      description:
-        "Registrar um novo assistido ou continuar o cadastro de um já existente.",
+      description: "Cadastrar um novo assistido ou alterar um existente.",
       icon: <UserPlusIcon />,
       // Só o time do Atendimento Fraterno, que faz a entrevista; os
       // admins cadastram pela Lista de Assistidos.
@@ -89,9 +88,8 @@ export default async function HomePage() {
     {
       key: "di-ii",
       href: "/desobsessao-infantil-ii",
-      title: "Assistentes em Desobsessão Infantil II",
-      description:
-        "Consultar os assistidos com assistência ativa da Desobsessão Infantil II.",
+      title: "Assistidos em Desobsessão Infantil",
+      description: "Consultar os assistidos em desobsessão infantil.",
       icon: <UserListIcon />,
       isVisible: belongsToSector(sectors, DESOBSESSAO_INFANTIL_II_SECTOR),
     },

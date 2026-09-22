@@ -29,6 +29,8 @@ vi.mock("next/link", () => ({
 
 import HomePage from "./page";
 import {
+  belongsToDepartment,
+  belongsToSector,
   loadVolunteerSectors,
   requireVolunteer,
 } from "@/lib/current-volunteer";
@@ -60,6 +62,8 @@ async function renderHome(): Promise<string> {
 beforeEach(() => {
   vi.mocked(requireVolunteer).mockResolvedValue(volunteerSession("coordenador"));
   vi.mocked(loadVolunteerSectors).mockResolvedValue(SECTORS);
+  vi.mocked(belongsToDepartment).mockReturnValue(false);
+  vi.mocked(belongsToSector).mockReturnValue(false);
 });
 
 describe("home header", () => {
@@ -124,5 +128,19 @@ describe("home feature cards", () => {
 
     expect(html).toContain("Gerenciar Voluntários");
     expect(html).toContain("Lista de Assistidos");
+  });
+
+  it("uses the updated copy for the cadastro and DI II cards", async () => {
+    vi.mocked(belongsToDepartment).mockReturnValue(true);
+    vi.mocked(belongsToSector).mockReturnValue(true);
+
+    const html = await renderHome();
+
+    expect(html).toContain("Cadastrar um novo assistido ou alterar um existente.");
+    expect(html).toContain("Assistidos em Desobsessão Infantil");
+    expect(html).toContain("Consultar os assistidos em desobsessão infantil.");
+    // DI I keeps its own title; the old DI II wording is gone.
+    expect(html).toContain("Assistentes em Desobsessão Infantil I");
+    expect(html).not.toContain("Assistentes em Desobsessão Infantil II");
   });
 });

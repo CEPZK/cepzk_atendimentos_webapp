@@ -23,7 +23,7 @@ import { DI_II_FROM } from "../desobsessao-infantil/from-keys";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Assistentes em Desobsessão Infantil II",
+  title: "Assistidos em Desobsessão Infantil",
 };
 
 interface TreatmentRow {
@@ -130,13 +130,8 @@ export default async function DesobsessaoInfantilIIPage() {
       </Link>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-        Assistentes em Desobsessão Infantil II
+        Assistidos em Desobsessão Infantil
       </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Assistidos com assistência ativa da Desobsessão Infantil II,
-        ordenados alfabeticamente. Use a busca para encontrar assistidos
-        arquivados.
-      </p>
 
       {error ? (
         <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
