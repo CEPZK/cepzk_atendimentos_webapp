@@ -7,7 +7,8 @@ export default function Loading() {
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-6 py-3">
           <SkeletonBlock className="h-10 w-10 shrink-0 rounded-full" />
-          <SkeletonBlock className="h-5 w-40" />
+          <SkeletonBlock className="h-5 w-40 flex-1" />
+          <SkeletonBlock className="h-10 w-10 shrink-0 rounded-full" />
         </div>
       </div>
 

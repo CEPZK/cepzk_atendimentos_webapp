@@ -13,6 +13,7 @@ import {
   DESOBSESSAO_INFANTIL_II_SECTOR,
 } from "@/lib/assistido";
 import { FeatureCard } from "@/app/feature-card";
+import { ProfileMenu } from "@/app/profile-menu";
 import {
   BookHeartIcon,
   CalendarHeartIcon,
@@ -142,6 +143,7 @@ export default async function HomePage() {
           <h1 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-slate-900">
             {volunteer.nome}
           </h1>
+          <ProfileMenu />
         </div>
       </header>
 

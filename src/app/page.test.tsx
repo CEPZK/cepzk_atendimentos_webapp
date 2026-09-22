@@ -68,6 +68,7 @@ describe("home header", () => {
 
     expect(html).toContain(">Mariana<");
     expect(html).toContain(">MA<");
+    expect(html).toContain('aria-label="Abrir menu"');
     expect(html).not.toContain("Olá,");
     expect(html).not.toContain("CEPZK · Atendimentos</p>");
   });
