@@ -4,8 +4,6 @@ import {
   assistidoInitials,
   canRepeatAtendimento,
   compareNames,
-  DESOBSESSAO_INFANTIL_I_SECTOR,
-  DESOBSESSAO_INFANTIL_II_SECTOR,
   DESOBSESSAO_INFANTIL_SECTOR,
   ESTADO_ALTA,
   ESTADO_EM_TRATAMENTO,
@@ -366,21 +364,17 @@ describe("treatmentStateAction", () => {
   });
 
   it("discharges the child in the Desobsessão Infantil", () => {
-    for (const setor of [
-      DESOBSESSAO_INFANTIL_SECTOR,
-      DESOBSESSAO_INFANTIL_I_SECTOR,
-      DESOBSESSAO_INFANTIL_II_SECTOR,
-    ]) {
-      expect(treatmentStateAction(setor, ESTADO_EM_TRATAMENTO)).toEqual({
-        nextState: ESTADO_ALTA,
-        label: "Dar Alta",
-      });
-    }
+    expect(
+      treatmentStateAction(DESOBSESSAO_INFANTIL_SECTOR, ESTADO_EM_TRATAMENTO),
+    ).toEqual({
+      nextState: ESTADO_ALTA,
+      label: "Dar Alta",
+    });
   });
 
   it("offers nothing once the child is discharged", () => {
     expect(
-      treatmentStateAction(DESOBSESSAO_INFANTIL_I_SECTOR, ESTADO_ALTA),
+      treatmentStateAction(DESOBSESSAO_INFANTIL_SECTOR, ESTADO_ALTA),
     ).toBeNull();
   });
 

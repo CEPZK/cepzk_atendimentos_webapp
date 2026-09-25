@@ -10,6 +10,7 @@ import {
 } from "@/lib/atendimento";
 import {
   CALENDAR_OCCURRENCES,
+  addDays,
   dayKey,
   parseHorario,
   todayKey,
@@ -65,14 +66,18 @@ export default async function AcaCalendarPage() {
     .filter((atendimento) => isAcolherComAmor(atendimento.setor));
 
   // Cada atendimento do ACA tem seu próprio dia e hora: a agenda é a
-  // união das ocorrências de todos eles.
+  // união das ocorrências de todos eles. A janela começa no passado para
+  // que o calendário navegue pelos meses anteriores.
+  const PAST_OCCURRENCES = 13;
   const occurrences = atendimentos
     .flatMap((atendimento) => {
       const schedule = parseHorario(atendimento.horario);
       if (!schedule) return [];
-      return upcomingOccurrences(schedule, CALENDAR_OCCURRENCES).map(
-        (date) => ({ atendimento, date }),
-      );
+      return upcomingOccurrences(
+        schedule,
+        PAST_OCCURRENCES + CALENDAR_OCCURRENCES,
+        addDays(new Date(), -PAST_OCCURRENCES * 7),
+      ).map((date) => ({ atendimento, date }));
     })
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
@@ -134,9 +139,6 @@ export default async function AcaCalendarPage() {
       ),
     }));
 
-  const horarios =
-    atendimentos.map((item) => item.horario).join(" · ") || "Acolher com Amor";
-
   // O dia corrente na hora da casa: é ele que a tela marca como "hoje",
   // tanto na grade quanto no dia aberto pelo voluntário.
   const today = todayKey();
@@ -154,12 +156,8 @@ export default async function AcaCalendarPage() {
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
         Calendário do Acolher com Amor
       </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        As sessões de {horarios}. Clique em um dia para ver os assistidos
-        agendados.
-      </p>
 
-      <CalendarScreen days={days} horarios={horarios} today={today} />
+      <CalendarScreen days={days} today={today} />
     </main>
   );
 }

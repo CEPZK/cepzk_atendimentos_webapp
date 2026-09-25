@@ -32,6 +32,10 @@ interface TreatmentFieldsProps {
   canRemove: boolean;
   onChange: (treatment: TreatmentInput) => void;
   onRemove: () => void;
+  /** Overrides the default "Assistência N" heading (editors, e.g.). */
+  title?: string;
+  /** Renders without the card `<li>` wrapper, for embedding in editors. */
+  wrap?: boolean;
 }
 
 /**
@@ -50,6 +54,8 @@ export function TreatmentFields({
   canRemove,
   onChange,
   onRemove,
+  title,
+  wrap = true,
 }: TreatmentFieldsProps) {
   const atendimento = atendimentos.find(
     (item) => item.id === treatment.atendimentoId,
@@ -98,11 +104,11 @@ export function TreatmentFields({
 
   const fieldId = (name: string) => `assistencia-${index}-${name}`;
 
-  return (
-    <li className="rounded-xl border border-slate-200 p-4">
+  const body = (
+    <>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900">
-          Assistência {index + 1}
+          {title ?? `Assistência ${index + 1}`}
         </h3>
         {canRemove && (
           <button
@@ -207,6 +213,12 @@ export function TreatmentFields({
           />
         </div>
       </div>
-    </li>
+    </>
   );
+
+  if (!wrap) {
+    return body;
+  }
+
+  return <li className="rounded-xl border border-slate-200 p-4">{body}</li>;
 }

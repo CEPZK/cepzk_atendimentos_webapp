@@ -7,8 +7,8 @@ import {
 } from "@/lib/current-volunteer";
 import {
   buildDesobsessaoInfantilList,
-  DESOBSESSAO_INFANTIL_II_SECTOR,
-  isDesobsessaoInfantilII,
+  DESOBSESSAO_INFANTIL_SECTOR,
+  isDesobsessaoInfantil,
 } from "@/lib/assistido";
 import {
   ATENDIMENTO_SELECT,
@@ -17,13 +17,13 @@ import {
   type AtendimentoRow,
 } from "@/lib/atendimento";
 import { ArrowLeftIcon } from "@/app/icons";
-import { DesobsessaoInfantilList } from "../desobsessao-infantil/di-list";
-import { DI_II_FROM } from "../desobsessao-infantil/from-keys";
+import { DesobsessaoInfantilList } from "./di-list";
+import { DI_FROM } from "./from-keys";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Assistentes em Desobsessão Infantil II",
+  title: "Assistidos em Desobsessão Infantil",
 };
 
 interface TreatmentRow {
@@ -39,18 +39,18 @@ interface TreatmentRow {
     | null;
 }
 
-export default async function DesobsessaoInfantilIIPage() {
+export default async function DesobsessaoInfantilPage() {
   const { supabase, volunteer } = await requireVolunteer();
 
-  // Apenas os voluntários escalados para a Desobsessão Infantil II veem
+  // Apenas os voluntários escalados para a Desobsessão Infantil veem
   // esta lista (admins não).
   const sectors = await loadVolunteerSectors(supabase, volunteer.id);
-  if (!sectors.some((s) => isDesobsessaoInfantilII(s.nome))) {
+  if (!sectors.some((s) => isDesobsessaoInfantil(s.nome))) {
     redirect("/");
   }
 
-  // Pull every treatment ever tied to DI II (archived included, so the
-  // search bar can find past assistidos).
+  // Pull every treatment ever tied to the sector (archived included, so
+  // the search bar can find past assistidos).
   const { data, error } = await supabase
     .from("cepzk_tratamento")
     .select(
@@ -74,15 +74,15 @@ export default async function DesobsessaoInfantilIIPage() {
         assistido_data_arquivamento: assistido?.data_arquivamento ?? null,
       };
     })
-    .filter((row) => isDesobsessaoInfantilII(row.setor));
+    .filter((row) => isDesobsessaoInfantil(row.setor));
 
   const active = buildDesobsessaoInfantilList(
     sectorRows,
-    DESOBSESSAO_INFANTIL_II_SECTOR,
+    DESOBSESSAO_INFANTIL_SECTOR,
   );
 
   // Search pool includes archived assistidos / archived treatments as long
-  // as they have at least one DI II treatment.
+  // as they have at least one Desobsessão Infantil treatment.
   const allForSearch = (() => {
     const byId = new Map<
       number,
@@ -130,13 +130,8 @@ export default async function DesobsessaoInfantilIIPage() {
       </Link>
 
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
-        Assistentes em Desobsessão Infantil II
+        Assistidos em Desobsessão Infantil
       </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Assistidos com assistência ativa da Desobsessão Infantil II,
-        ordenados alfabeticamente. Use a busca para encontrar assistidos
-        arquivados.
-      </p>
 
       {error ? (
         <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -146,8 +141,8 @@ export default async function DesobsessaoInfantilIIPage() {
       ) : (
         <DesobsessaoInfantilList
           assistidos={merged}
-          from={DI_II_FROM}
-          emptyLabel="Nenhum assistido com assistência da Desobsessão Infantil II no momento."
+          from={DI_FROM}
+          emptyLabel="Nenhum assistido com assistência da Desobsessão Infantil no momento."
         />
       )}
     </main>

@@ -39,14 +39,9 @@ export function TreatmentSummaryDetails({
       {treatment.queixas.length > 0 && (
         <div className="mt-3">
           <p className="text-xs text-slate-500">Principais queixas</p>
-          <ul className="mt-1 flex flex-wrap gap-1.5">
+          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-slate-700">
             {treatment.queixas.map((queixa) => (
-              <li
-                key={queixa}
-                className="rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700"
-              >
-                {queixa}
-              </li>
+              <li key={queixa}>{queixa}</li>
             ))}
           </ul>
         </div>

@@ -8,12 +8,10 @@
 export const ACA_SECTOR = "Acolher com Amor";
 
 /**
- * Sectors of the Desobsessão Infantil (I and II): the treatment ends with
- * an "alta" given by the team itself.
+ * Sector of the Desobsessão Infantil: the treatment ends with an "alta"
+ * given by the team itself.
  */
 export const DESOBSESSAO_INFANTIL_SECTOR = "Desobsessão Infantil";
-export const DESOBSESSAO_INFANTIL_I_SECTOR = "Desobsessão Infantil I";
-export const DESOBSESSAO_INFANTIL_II_SECTOR = "Desobsessão Infantil II";
 
 /** Distonia that asks for the list of main complaints. */
 export const TEA_DISTONIA = "TEA";
@@ -135,6 +133,24 @@ export function canonicalState(estado: string): string {
 
 export function isState(estado: string, expected: string): boolean {
   return canonicalState(estado) === canonicalState(expected);
+}
+
+/** Alta and expirado close the treatment; anything else keeps it open. */
+export function isFinalState(estado: string | null | undefined): boolean {
+  return isState(estado ?? "", ESTADO_ALTA) || isState(estado ?? "", ESTADO_EXPIRADO);
+}
+
+/**
+ * Sectors with a treatment still open: while one of them is not in alta
+ * or expirado, the assistido cannot start another treatment in the same
+ * sector — no matter the atendimento or the horário.
+ */
+export function ongoingSetors(
+  rows: { setor: string; estado: string | null }[],
+): Set<string> {
+  return new Set(
+    rows.filter((row) => !isFinalState(row.estado)).map((row) => row.setor),
+  );
 }
 
 /**
@@ -334,23 +350,9 @@ export function buildAcaWaitlist(
   );
 }
 
-/** Desobsessão Infantil I and II. */
+/** The Desobsessão Infantil sector (case/diacritic-insensitive). */
 export function isDesobsessaoInfantil(setor: string): boolean {
-  return isDesobsessaoInfantilI(setor) || isDesobsessaoInfantilII(setor);
-}
-
-export function isDesobsessaoInfantilI(setor: string): boolean {
-  // "Desobsessão Infantil I" matches exactly; "Desobsessão Infantil" (no
-  // suffix) counts as I for backward compatibility with existing rows.
-  const normalized = normalizeState(setor);
-  return (
-    normalized === normalizeState(DESOBSESSAO_INFANTIL_I_SECTOR) ||
-    normalized === normalizeState(DESOBSESSAO_INFANTIL_SECTOR)
-  );
-}
-
-export function isDesobsessaoInfantilII(setor: string): boolean {
-  return normalizeState(setor) === normalizeState(DESOBSESSAO_INFANTIL_II_SECTOR);
+  return isSector(setor, DESOBSESSAO_INFANTIL_SECTOR);
 }
 
 /** Whether a treatment belongs to a specific sector (case/diacritic-insensitive). */
@@ -389,19 +391,12 @@ interface TreatmentRowForDI {
  * who are not archived and have at least one non-archived treatment that
  * matches `sectorMatcher`. Sorted alphabetically by name. The row's
  * estado is the **most recent** treatment's estado.
- *
- * The matcher is a predicate (rather than a plain sector name) so that
- * the caller can include legacy rows such as "Desobsessão Infantil"
- * (without the "I" suffix) in the Desobsessão Infantil I view.
  */
 export function buildDesobsessaoInfantilList(
   rows: TreatmentRowForDI[],
-  sectorMatcher: string | ((setor: string) => boolean),
+  sectorMatcher: string,
 ): DesobsessaoInfantilListItem[] {
-  const matches =
-    typeof sectorMatcher === "function"
-      ? sectorMatcher
-      : (setor: string) => isSector(setor, sectorMatcher);
+  const matches = (setor: string) => isSector(setor, sectorMatcher);
 
   const bestById = new Map<number, {
     item: DesobsessaoInfantilListItem;

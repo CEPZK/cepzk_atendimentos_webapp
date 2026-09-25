@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { formatLongDate, formatTime } from "@/lib/aca-agenda";
 import { assistidoInitials, normalizeName } from "@/lib/assistido";
@@ -17,8 +17,11 @@ import type { AcaRelatorio } from "@/lib/aca-relatorio";
  */
 export function ReportsList({
   relatorios,
+  action,
 }: {
   relatorios: AcaRelatorio[];
+  /** Extra content (the register button, e.g.) between search and list. */
+  action?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
 
@@ -44,6 +47,8 @@ export function ReportsList({
           className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-600/30"
         />
       </div>
+
+      {action && <div className="mt-3">{action}</div>}
 
       <p className="mt-4 text-xs text-slate-500">
         {results.length} de {relatorios.length}{" "}
