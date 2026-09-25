@@ -151,7 +151,6 @@ export default async function AcaTreatmentSessionsPage({
 
       <TreatmentSessionsEditor
         treatmentId={treatment.id}
-        assistidoNome={assistidoNome}
         sessions={sessions}
         treatment={treatmentData}
         procedimentos={procedimentos ?? []}

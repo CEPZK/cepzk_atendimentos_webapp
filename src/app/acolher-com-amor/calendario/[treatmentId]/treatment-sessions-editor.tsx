@@ -29,7 +29,6 @@ export interface EditableSession {
 
 interface TreatmentSessionsEditorProps {
   treatmentId: number;
-  assistidoNome: string;
   sessions: EditableSession[];
   treatment: TreatmentSummary;
   procedimentos: CatalogItem[];
@@ -54,7 +53,6 @@ interface SessionState {
  */
 export function TreatmentSessionsEditor({
   treatmentId,
-  assistidoNome,
   sessions,
   treatment,
   procedimentos,
@@ -109,15 +107,6 @@ export function TreatmentSessionsEditor({
 
   return (
     <section className="mt-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-slate-900">
-          Sessões de {assistidoNome}
-        </h2>
-      </div>
-      <p className="mt-1 text-sm text-slate-500">
-        Altere, remova ou adicione os procedimentos de cada sessão.
-      </p>
-
       <TreatmentSummaryCard treatment={treatment} />
 
       <ol className="mt-4 space-y-3">
