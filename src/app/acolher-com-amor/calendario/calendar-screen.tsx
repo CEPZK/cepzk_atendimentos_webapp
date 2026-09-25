@@ -59,7 +59,6 @@ export function CalendarScreen({
   return (
     <>
       <AcaMonthCalendar
-        title="Sessões do Acolher com Amor"
         days={days.map((day) => ({
           iso: day.iso,
           assistidos: day.assistidos.map((item) => item.nome),

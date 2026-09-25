@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/app/confirm-dialog";
 import { updateTreatmentState } from "../actions";
 
 const BUTTON_CLASS =
@@ -13,6 +14,10 @@ const BUTTON_CLASS =
  *
  * The team that runs the treatment moves it forward from the assistido's
  * screen; the server action checks the escala again before writing.
+ *
+ * A mudança feita na tela (o "Dar Alta") pede confirmação num diálogo
+ * centralizado antes de escrever; a que abre outra tela (a agenda do
+ * Acolher com Amor) é só um link.
  */
 export function TreatmentStateButton({
   treatmentId,
@@ -29,12 +34,14 @@ export function TreatmentStateButton({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  function handleClick() {
+  function confirm() {
     setError(null);
     startTransition(async () => {
       const result = await updateTreatmentState(treatmentId, nextState);
       if (!result.ok) {
+        setConfirming(false);
         setError(result.message ?? "Não foi possível atualizar.");
         return;
       }
@@ -56,7 +63,10 @@ export function TreatmentStateButton({
     <div className="mt-4">
       <button
         type="button"
-        onClick={handleClick}
+        onClick={() => {
+          setError(null);
+          setConfirming(true);
+        }}
         disabled={isPending}
         className={BUTTON_CLASS}
       >
@@ -70,6 +80,18 @@ export function TreatmentStateButton({
         >
           {error}
         </p>
+      )}
+
+      {confirming && (
+        <ConfirmDialog
+          title="Dar alta?"
+          description="A assistência passará para a situação Alta."
+          confirmLabel={label}
+          pendingLabel="Salvando..."
+          isPending={isPending}
+          onConfirm={confirm}
+          onCancel={() => setConfirming(false)}
+        />
       )}
     </div>
   );

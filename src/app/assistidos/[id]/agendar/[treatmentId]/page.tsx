@@ -203,7 +203,6 @@ export default async function AgendarPage({
           backQuery={backQuery}
           treatmentId={treatment.id}
           assistidoNome={assistidoNome}
-          horario={atendimento.horario}
           days={days}
           treatment={treatmentData}
           procedimentos={procedimentos ?? []}

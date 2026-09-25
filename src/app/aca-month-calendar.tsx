@@ -22,7 +22,8 @@ export interface AgendaDay {
 }
 
 interface AcaMonthCalendarProps {
-  title: string;
+  /** Optional heading above the calendar. */
+  title?: string;
   /** Optional subtext under the title. */
   description?: string;
   days: AgendaDay[];
@@ -123,7 +124,9 @@ export function AcaMonthCalendar({
   if (days.length === 0) {
     return (
       <section className="mt-6">
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        {title && (
+          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        )}
         {description && (
           <p className="mt-1 text-sm text-slate-500">{description}</p>
         )}
@@ -136,7 +139,9 @@ export function AcaMonthCalendar({
 
   return (
     <section className="mt-6">
-      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+      {title && (
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+      )}
       {description && (
         <p className="mt-1 text-sm text-slate-500">{description}</p>
       )}
