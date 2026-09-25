@@ -39,7 +39,6 @@ interface ScheduleFlowProps {
   backQuery: string;
   treatmentId: number;
   assistidoNome: string;
-  horario: string;
   days: CalendarDay[];
   treatment: TreatmentSummary;
   procedimentos: CatalogItem[];
@@ -60,7 +59,6 @@ export function ScheduleFlow({
   backQuery,
   treatmentId,
   assistidoNome,
-  horario,
   days,
   treatment,
   procedimentos,
@@ -119,7 +117,6 @@ export function ScheduleFlow({
   if (!selected) {
     return (
       <CalendarStep
-        horario={horario}
         days={days}
         today={today}
         onChoose={chooseDay}
@@ -220,12 +217,10 @@ export function ScheduleFlow({
 
 /** First step: the month calendar and the day's choice dialog. */
 function CalendarStep({
-  horario,
   days,
   today,
   onChoose,
 }: {
-  horario: string;
   days: CalendarDay[];
   /** `YYYY-MM-DD` key of the current day in the house's time zone. */
   today: string;
@@ -247,7 +242,6 @@ function CalendarStep({
     <>
       <AcaMonthCalendar
         title="Escolha o dia da primeira sessão"
-        description={`Só os dias de atendimento (${horario}) podem ser escolhidos.`}
         days={days}
         onSelectDay={setOpen}
       />
@@ -347,7 +341,7 @@ function DayDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="dia-atendimento"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
     >
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h3

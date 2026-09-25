@@ -176,9 +176,6 @@ export default async function NovoRelatorioPage() {
     );
   })();
 
-  const horarios =
-    atendimentos.map((item) => item.horario).join(" · ") || "Acolher com Amor";
-
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 p-6">
       <Link
@@ -192,10 +189,6 @@ export default async function NovoRelatorioPage() {
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
         Registrar Relatório
       </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        Escolha o dia no calendário ({horarios}) para registrar ponte,
-        dirigente e observações dos assistidos atendidos.
-      </p>
 
       <ReportFlow days={days} volunteers={volunteers} />
     </main>

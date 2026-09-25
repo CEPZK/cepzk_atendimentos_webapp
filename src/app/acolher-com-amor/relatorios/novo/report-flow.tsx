@@ -90,7 +90,6 @@ export function ReportFlow({ days, volunteers }: ReportFlowProps) {
     <>
       <AcaMonthCalendar
         title="Escolha o dia da sessão"
-        description="Os dias em destaque são os do Acolher com Amor."
         days={agendaDays}
         onSelectDay={setOpenKey}
       />
