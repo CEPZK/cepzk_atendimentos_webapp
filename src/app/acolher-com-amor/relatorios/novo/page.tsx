@@ -9,8 +9,9 @@ import {
   type AtendimentoRow,
 } from "@/lib/atendimento";
 import {
-  CALENDAR_OCCURRENCES,
+  addDays,
   dayKey,
+  monthGrid,
   parseHorario,
   upcomingOccurrences,
 } from "@/lib/aca-agenda";
@@ -20,6 +21,7 @@ import {
   type ReportCalendarDay,
   type ReportVolunteer,
 } from "./report-flow";
+import { reportMonth } from "@/lib/aca-relatorio";
 import { fullName, type Volunteer } from "@/lib/volunteer";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +53,11 @@ interface SessionRow {
  * do Acolher com Amor e, em seguida, preenche ponte/dirigente/observações
  * de cada assistido agendado naquele dia.
  */
-export default async function NovoRelatorioPage() {
+export default async function NovoRelatorioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string | string[] }>;
+}) {
   const { supabase } = await requireSector(ACA_SECTOR);
 
   const { data: atendimentoRows } = await supabase
@@ -63,50 +69,48 @@ export default async function NovoRelatorioPage() {
     .map(mapAtendimento)
     .filter((atendimento) => isAcolherComAmor(atendimento.setor));
 
-  // Próximas ocorrências do Acolher com Amor: o calendário mostra os
-  // mesmos dias do agendamento de sessões.
+  // Reports can refer to past months as well as upcoming sessions.
+  // Fetch only the visible grid, including the neighbouring-month cells.
+  const month = reportMonth((await searchParams).mes);
+  const cells = monthGrid(month.year, month.month).weeks.flat();
+  const from = new Date(`${cells[0].key}T00:00:00-03:00`);
+  const to = addDays(new Date(`${cells[cells.length - 1].key}T00:00:00-03:00`), 1);
+
+  const { data: sessionRows, error: sessionError } = await supabase
+    .from("aca_sessao")
+    .select(
+      `id, data, relatorio:aca_relatorio (id), tratamento:cepzk_tratamento (id, atendimento_id, assistido:cepzk_assistido (id, nome_completo))`,
+    )
+    .gte("data", from.toISOString())
+    .lt("data", to.toISOString())
+    .order("data")
+    .returns<SessionRow[]>();
+
+  const acaAtendimentoIds = new Set(atendimentos.map((item) => item.id));
+  // Use the same scheduled weekdays and times as the ACA calendar.
+  // Populating every cell would widen all columns and make non-service
+  // days selectable. Only scheduled occurrences should be highlighted.
   const occurrences = atendimentos
     .flatMap((atendimento) => {
       const schedule = parseHorario(atendimento.horario);
       if (!schedule) return [];
-      return upcomingOccurrences(schedule, CALENDAR_OCCURRENCES).map(
-        (date) => ({ atendimento, date }),
+      return upcomingOccurrences(
+        schedule,
+        cells.length / 7,
+        new Date(from.getTime() - 1),
       );
     })
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+    .sort((a, b) => a.getTime() - b.getTime());
 
-  let sessionRows: SessionRow[] = [];
-  if (occurrences.length > 0) {
-    const from = occurrences[0].date;
-    const to = new Date(
-      occurrences[occurrences.length - 1].date.getTime() + 86_400_000,
-    );
-
-    const { data } = await supabase
-      .from("aca_sessao")
-      .select(
-        `id, data, relatorio:aca_relatorio (id), tratamento:cepzk_tratamento (id, atendimento_id, assistido:cepzk_assistido (id, nome_completo))`,
-      )
-      .gte("data", from.toISOString())
-      .lte("data", to.toISOString())
-      .returns<SessionRow[]>();
-    sessionRows = data ?? [];
-  }
-
-  const acaAtendimentoIds = new Set(atendimentos.map((item) => item.id));
-
-  // Um dia por data do calendário: cada ocorrência vira um item
-  // (mesmo quando não há assistidos agendados, o dia continua
-  // disponível para abrir o diálogo de relatório).
   const daysByKey = new Map<string, ReportCalendarDay>();
-  for (const { date } of occurrences) {
+  for (const date of occurrences) {
     const key = dayKey(date);
     if (!daysByKey.has(key)) {
       daysByKey.set(key, { iso: date.toISOString(), assistidos: [] });
     }
   }
 
-  for (const row of sessionRows) {
+  for (const row of sessionRows ?? []) {
     const tratamento = one(row.tratamento);
     if (!tratamento || !acaAtendimentoIds.has(tratamento.atendimento_id ?? -1)) {
       continue;
@@ -190,7 +194,18 @@ export default async function NovoRelatorioPage() {
         Registrar Relatório
       </h1>
 
-      <ReportFlow days={days} volunteers={volunteers} />
+      {sessionError ? (
+        <p role="alert" className="mt-6 text-sm text-red-700">
+          Não foi possível carregar as sessões. Tente novamente.
+        </p>
+      ) : (
+        <ReportFlow
+          key={`${month.year}-${month.month}`}
+          month={month}
+          days={days}
+          volunteers={volunteers}
+        />
+      )}
     </main>
   );
 }

@@ -47,7 +47,7 @@ export default async function CompleteProfilePage() {
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <CompleteProfileForm profile={profile} />
+      <CompleteProfileForm />
     </main>
   );
 }

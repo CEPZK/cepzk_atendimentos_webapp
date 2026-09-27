@@ -2,18 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { VolunteerProfile } from "@/lib/volunteer";
 
-interface CompleteProfileFormProps {
-  profile: VolunteerProfile;
-}
-
-export function CompleteProfileForm({ profile }: CompleteProfileFormProps) {
+export function CompleteProfileForm() {
   const router = useRouter();
 
-  const [nome, setNome] = useState(profile.nome ?? "");
-  const [sobrenome, setSobrenome] = useState(profile.sobrenome ?? "");
-  const [telefone, setTelefone] = useState(profile.telefone ?? "");
+  // Do not prefill invitation placeholders or Auth metadata in onboarding.
+  const [nome, setNome] = useState("");
+  const [sobrenome, setSobrenome] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

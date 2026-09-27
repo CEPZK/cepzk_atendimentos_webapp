@@ -10,6 +10,11 @@ import {
   type TreatmentInput,
 } from "@/lib/assistido";
 import type { AtendimentoItem } from "@/lib/atendimento";
+import {
+  canAddTreatment,
+  treatmentOptions,
+  treatmentSelectionError,
+} from "@/lib/treatment-selection";
 import { ChevronRightIcon, PlusIcon } from "@/app/icons";
 import { createAssistido, findSimilarAssistidos } from "../actions";
 import {
@@ -74,6 +79,12 @@ export function NewAssistidoFlow({
   function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    const selectionError = treatmentSelectionError(treatments, atendimentos);
+    if (selectionError) {
+      setError(selectionError);
+      return;
+    }
 
     startTransition(async () => {
       const result = await createAssistido({
@@ -208,12 +219,11 @@ export function NewAssistidoFlow({
     );
   }
 
-  // One treatment per atendimento: adding more than the catalogue holds
-  // would only produce duplicates.
-  const usedAtendimentos = new Set(
-    treatments.map((treatment) => treatment.atendimentoId).filter(Boolean),
-  );
-  const canAddTreatment = usedAtendimentos.size < atendimentos.length;
+  const hasUnusedAtendimentos = treatmentOptions(
+    atendimentos,
+    treatments,
+  ).length > 0;
+  const canAdd = canAddTreatment(treatments, atendimentos);
 
   return (
     <>
@@ -252,7 +262,7 @@ export function NewAssistidoFlow({
                 key={index}
                 index={index}
                 treatment={treatment}
-                atendimentos={atendimentos}
+                atendimentos={treatmentOptions(atendimentos, treatments, index)}
                 distonias={distonias}
                 queixas={queixas}
                 canRemove={treatments.length > 1}
@@ -272,13 +282,18 @@ export function NewAssistidoFlow({
             ))}
           </ul>
 
-          {canAddTreatment && (
+          {hasUnusedAtendimentos && (
             <button
               type="button"
               onClick={() =>
-                setTreatments((current) => [...current, emptyTreatment()])
+                setTreatments((current) =>
+                  canAddTreatment(current, atendimentos)
+                    ? [...current, emptyTreatment()]
+                    : current,
+                )
               }
-              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-sky-400 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600"
+              disabled={isPending || !canAdd}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-sky-400 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <PlusIcon className="h-5 w-5" />
               Adicionar assistência

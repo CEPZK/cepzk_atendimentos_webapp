@@ -41,6 +41,7 @@ export interface ReportVolunteer {
 }
 
 interface ReportFlowProps {
+  month: { year: number; month: number };
   days: ReportCalendarDay[];
   volunteers: ReportVolunteer[];
 }
@@ -50,7 +51,7 @@ interface ReportFlowProps {
  * para o dia escolhido, um diálogo com os assistidos daquele dia e o
  * formulário de ponte, dirigente e observações.
  */
-export function ReportFlow({ days, volunteers }: ReportFlowProps) {
+export function ReportFlow({ month, days, volunteers }: ReportFlowProps) {
   const router = useRouter();
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -91,6 +92,11 @@ export function ReportFlow({ days, volunteers }: ReportFlowProps) {
       <AcaMonthCalendar
         title="Escolha o dia da sessão"
         days={agendaDays}
+        month={month}
+        onMonthChange={(next) => {
+          const key = `${String(next.year).padStart(4, "0")}-${String(next.month).padStart(2, "0")}`;
+          router.push(`/acolher-com-amor/relatorios/novo?mes=${key}`, { scroll: false });
+        }}
         onSelectDay={setOpenKey}
       />
 
