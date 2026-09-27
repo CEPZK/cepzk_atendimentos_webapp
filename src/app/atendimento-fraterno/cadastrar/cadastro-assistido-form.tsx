@@ -12,6 +12,11 @@ import {
   type TreatmentInput,
 } from "@/lib/assistido";
 import type { AtendimentoItem } from "@/lib/atendimento";
+import {
+  canAddTreatment,
+  treatmentOptions,
+  treatmentSelectionError,
+} from "@/lib/treatment-selection";
 import { CheckIcon, PlusIcon, PuzzlePieceIcon } from "@/app/icons";
 import { createAssistido } from "@/app/assistidos/actions";
 import {
@@ -81,9 +86,6 @@ export function CadastroAssistidoForm({
   const [nome, setNome] = useState(
     assistido?.nomeCompleto ?? initialName ?? "",
   );
-  const [treatments, setTreatments] = useState<TreatmentInput[]>([
-    emptyTreatment(),
-  ]);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
@@ -99,6 +101,10 @@ export function CadastroAssistidoForm({
     [atendimentos, blockedSetors],
   );
 
+  const [treatments, setTreatments] = useState<TreatmentInput[]>(() =>
+    assistido && availableAtendimentos.length === 0 ? [] : [emptyTreatment()],
+  );
+
   // The editor keeps the treatment's current atendimento as an option,
   // on top of the unblocked catalogue.
   function editorAtendimentos(treatment: ExistingTreatmentView) {
@@ -108,37 +114,42 @@ export function CadastroAssistidoForm({
     );
   }
 
-  // One treatment per atendimento among the new rows: adding more than
-  // the (available) catalogue holds would only produce duplicates.
-  const usedAtendimentos = new Set(
-    treatments.map((treatment) => treatment.atendimentoId).filter(Boolean),
-  );
-  const canAddTreatment = usedAtendimentos.size < availableAtendimentos.length;
+  const hasUnusedAtendimentos = treatmentOptions(
+    availableAtendimentos,
+    treatments,
+  ).length > 0;
+  const canAdd = canAddTreatment(treatments, availableAtendimentos);
+
+  function handleAddTreatment() {
+    setTreatments((current) =>
+      canAddTreatment(current, availableAtendimentos)
+        ? [...current, emptyTreatment()]
+        : current,
+    );
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
-    startTransition(async () => {
-      // Editando, as linhas novas ainda vazias não contam: salvar só o
-      // nome (e o desarquivamento) é um cadastro válido. Uma linha com
-      // observação mas sem atendimento continua indo — o servidor aponta
-      // o que falta.
-      const newTreatments = assistido
-        ? treatments.filter(
-            (treatment) =>
-              treatment.atendimentoId !== null ||
-              treatment.obs.trim() !== "",
-          )
-        : treatments;
+    const selectionError = treatmentSelectionError(
+      treatments,
+      availableAtendimentos,
+      !assistido,
+    );
+    if (selectionError) {
+      setError(selectionError);
+      return;
+    }
 
+    startTransition(async () => {
       const result = assistido
         ? await saveAssistido({
             assistidoId: assistido.id,
             nomeCompleto: nome,
-            treatments: newTreatments,
+            treatments,
           })
-        : await createAssistido({ nomeCompleto: nome, treatments: newTreatments });
+        : await createAssistido({ nomeCompleto: nome, treatments });
 
       if (!result.ok) {
         setError(result.message ?? "Não foi possível salvar.");
@@ -294,14 +305,14 @@ export function CadastroAssistidoForm({
         </section>
       )}
 
-      {(!assistido || availableAtendimentos.length > 0) && (
+      {(!assistido || availableAtendimentos.length > 0 || treatments.length > 0) && (
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">
             {assistido ? "Novas assistências" : "Assistências"}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             {assistido
-              ? "Inclua as novas assistências do assistido."
+              ? "Inclua as novas assistências do assistido. Para salvar sem novas assistências, remova as linhas não utilizadas."
               : "O assistido precisa de ao menos uma assistência."}
           </p>
           {blockedSetors.size > 0 && (
@@ -317,7 +328,11 @@ export function CadastroAssistidoForm({
                 key={index}
                 index={index}
                 treatment={treatment}
-                atendimentos={availableAtendimentos}
+                atendimentos={treatmentOptions(
+                  availableAtendimentos,
+                  treatments,
+                  index,
+                )}
                 distonias={distonias}
                 queixas={queixas}
                 // Novo cadastro: ao menos um tratamento tem de sobrar.
@@ -340,13 +355,12 @@ export function CadastroAssistidoForm({
             ))}
           </ul>
 
-          {canAddTreatment && (
+          {hasUnusedAtendimentos && (
             <button
               type="button"
-              onClick={() =>
-                setTreatments((current) => [...current, emptyTreatment()])
-              }
-              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-sky-400 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600"
+              onClick={handleAddTreatment}
+              disabled={isPending || !canAdd}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-sky-400 hover:text-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <PlusIcon className="h-5 w-5" />
               Adicionar assistência
@@ -355,7 +369,7 @@ export function CadastroAssistidoForm({
         </section>
       )}
 
-      {assistido && availableAtendimentos.length === 0 && (
+      {assistido && availableAtendimentos.length === 0 && treatments.length === 0 && (
         <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm leading-relaxed text-slate-500">
           Todos os setores deste assistido têm assistência em andamento: não
           há novas assistências para incluir agora.
