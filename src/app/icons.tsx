@@ -299,3 +299,24 @@ export function IosShareIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+/**
+ * iOS "Add to Home Screen" action icon (rounded square with a centered plus sign).
+ * Matches Noun Project icon #658054 (`add-screen`).
+ */
+export function AddToScreenIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <path strokeLinecap="butt" d="M12 8.5v7m-3.5-3.5h7" />
+    </svg>
+  );
+}
+
+
