@@ -110,9 +110,9 @@ describe("ProfileMenu", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("shows iOS-specific instructions when on iOS device", async () => {
+  it("shows Safari-specific instructions when on iOS device with Safari", async () => {
     Object.defineProperty(window.navigator, "userAgent", {
-      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
       configurable: true,
     });
 
@@ -125,6 +125,30 @@ describe("ProfileMenu", () => {
       name: "Instalar no iPhone / iPad",
     });
     expect(dialog).toBeDefined();
+    expect(screen.getByText(/Safari/)).toBeDefined();
+    expect(screen.getByText(/Compartilhar/)).toBeDefined();
+    expect(screen.getByText(/Adicionar à Tela de Início/)).toBeDefined();
+  });
+
+  it("shows Chrome-specific instructions when on iOS device with Chrome (CriOS)", async () => {
+    Object.defineProperty(window.navigator, "userAgent", {
+      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1",
+      configurable: true,
+    });
+
+    render(<ProfileMenu />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Instalar Aplicativo" }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Instalar no Chrome (iOS)",
+    });
+    expect(dialog).toBeDefined();
+    expect(
+      screen.getByRole("heading", { name: "Instalar no Chrome (iOS)" }),
+    ).toBeDefined();
+    expect(screen.getAllByText(/Chrome/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Compartilhar/)).toBeDefined();
     expect(screen.getByText(/Adicionar à Tela de Início/)).toBeDefined();
   });

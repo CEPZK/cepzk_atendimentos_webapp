@@ -14,7 +14,7 @@ import { InstallGuideDialog } from "@/app/install-guide-dialog";
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
-  const { isStandalone, isIOS, promptInstall } = usePwaInstall();
+  const { isStandalone, isIOS, isChromeIOS, promptInstall } = usePwaInstall();
 
   const handleInstallClick = async () => {
     setOpen(false);
@@ -83,6 +83,7 @@ export function ProfileMenu() {
       {showGuide && (
         <InstallGuideDialog
           isIOS={isIOS}
+          isChromeIOS={isChromeIOS}
           onClose={() => setShowGuide(false)}
         />
       )}

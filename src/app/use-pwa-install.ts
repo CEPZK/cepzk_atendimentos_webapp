@@ -92,6 +92,12 @@ function checkIsIOS(): boolean {
   );
 }
 
+function checkIsChromeIOS(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent || "";
+  return checkIsIOS() && /crios/i.test(ua);
+}
+
 const noopSubscribe = () => () => {};
 
 export function usePwaInstall() {
@@ -106,6 +112,11 @@ export function usePwaInstall() {
 
   // Sync with user agent platform
   const isIOS = useSyncExternalStore(noopSubscribe, checkIsIOS, () => false);
+  const isChromeIOS = useSyncExternalStore(
+    noopSubscribe,
+    checkIsChromeIOS,
+    () => false,
+  );
 
   // Sync with module-level deferredPrompt
   const currentPrompt = useSyncExternalStore(
@@ -140,6 +151,7 @@ export function usePwaInstall() {
   return {
     isStandalone: isStandalone || hasPromptAccepted,
     isIOS,
+    isChromeIOS,
     canPromptNative: Boolean(currentPrompt),
     promptInstall,
   };
