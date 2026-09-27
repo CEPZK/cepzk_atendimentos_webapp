@@ -127,7 +127,17 @@ describe("ProfileMenu", () => {
     expect(dialog).toBeDefined();
     expect(screen.getByText(/Safari/)).toBeDefined();
     expect(screen.getByText(/Compartilhar/)).toBeDefined();
+    expect(screen.getByText(/Ver Mais/)).toBeDefined();
+    expect(screen.getByLabelText("ícone de ver mais")).toBeDefined();
     expect(screen.getByText(/Adicionar à Tela de Início/)).toBeDefined();
+    expect(screen.getByText(/^Adicionar$/)).toBeDefined();
+    expect(screen.getByText(/canto superior direito/)).toBeDefined();
+
+    // Verify the 4 ordered steps
+    expect(screen.getByText("1")).toBeDefined();
+    expect(screen.getByText("2")).toBeDefined();
+    expect(screen.getByText("3")).toBeDefined();
+    expect(screen.getByText("4")).toBeDefined();
   });
 
   it("shows Chrome-specific instructions when on iOS device with Chrome (CriOS)", async () => {
@@ -150,7 +160,13 @@ describe("ProfileMenu", () => {
     ).toBeDefined();
     expect(screen.getAllByText(/Chrome/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Compartilhar/)).toBeDefined();
+    expect(screen.getByText(/Ver Mais/)).toBeDefined();
+    expect(screen.getByLabelText("ícone de ver mais")).toBeDefined();
     expect(screen.getByText(/Adicionar à Tela de Início/)).toBeDefined();
+    expect(screen.getByText("1")).toBeDefined();
+    expect(screen.getByText("2")).toBeDefined();
+    expect(screen.getByText("3")).toBeDefined();
+    expect(screen.getByText("4")).toBeDefined();
   });
 
   it("calls prompt() when native prompt is available", async () => {

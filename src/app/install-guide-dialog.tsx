@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { AddToScreenIcon, IosShareIcon } from "@/app/icons";
+import { AddToScreenIcon, DownArrowIcon, IosShareIcon } from "@/app/icons";
 
 interface InstallGuideDialogProps {
   isIOS: boolean;
@@ -133,6 +133,21 @@ export function InstallGuideDialog({
                     2
                   </span>
                   <span className="leading-snug">
+                    Toque em <strong>Ver Mais</strong>{" "}
+                    <span
+                      aria-label="ícone de ver mais"
+                      className="inline-flex items-center align-middle rounded bg-slate-100 px-1 py-0.5 text-slate-800 ring-1 ring-slate-200"
+                    >
+                      <DownArrowIcon className="h-4 w-4" />
+                    </span>
+                    .
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+                    3
+                  </span>
+                  <span className="leading-snug">
                     Role a lista para baixo e toque em{" "}
                     <strong>Adicionar à Tela de Início</strong>{" "}
                     <span
@@ -146,7 +161,7 @@ export function InstallGuideDialog({
                 </li>
                 <li className="flex items-start gap-2.5">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
-                    3
+                    4
                   </span>
                   <span className="leading-snug">
                     Toque em <strong>Adicionar</strong> no canto superior direito para confirmar.
