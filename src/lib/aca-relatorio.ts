@@ -1,3 +1,5 @@
+import { monthOf, todayKey } from "./aca-agenda";
+
 /**
  * Acolher com Amor — relatórios das sessões.
  *
@@ -40,4 +42,19 @@ export interface AcaRelatorio {
   ponteNome: string;
   /** Observações livres da sessão. */
   obs: string | null;
+}
+
+/** Month requested in the report calendar; malformed URLs fall back to today. */
+export function reportMonth(value: string | string[] | undefined): {
+  year: number;
+  month: number;
+} {
+  if (
+    typeof value === "string" &&
+    /^\d{4}-(0[1-9]|1[0-2])$/.test(value) &&
+    Number(value.slice(0, 4)) >= 100
+  ) {
+    return monthOf(`${value}-01`);
+  }
+  return monthOf(todayKey());
 }

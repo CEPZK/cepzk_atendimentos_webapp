@@ -27,6 +27,11 @@ interface AcaMonthCalendarProps {
   /** Optional subtext under the title. */
   description?: string;
   days: AgendaDay[];
+  /** Controlled navigation for screens that load one month at a time. */
+  month?: { year: number; month: number };
+  onMonthChange?: (month: { year: number; month: number }) => void;
+  /** Hide times when the calendar represents whole days rather than slots. */
+  showTime?: boolean;
   /** Called with the `YYYY-MM-DD` key of the day the volunteer clicked. */
   onSelectDay: (key: string) => void;
 }
@@ -37,13 +42,16 @@ interface AcaMonthCalendarProps {
  * booked on it, with a stable colour per name), while the rest of the
  * month stays visible but muted so the date is read in context.
  *
- * Shared by the two screens that draw this grid: the treatment start
- * (choose the first session) and the sessions calendar.
+ * Scheduling screens supply only bookable dates. The report screen supplies
+ * every day of its visible month and controls navigation to load history.
  */
 export function AcaMonthCalendar({
   title,
   description,
   days,
+  month,
+  onMonthChange,
+  showTime = true,
   onSelectDay,
 }: AcaMonthCalendarProps) {
   const byDay = useMemo(
@@ -78,7 +86,7 @@ export function AcaMonthCalendar({
 
   // Abre no mês corrente quando ele tem dias de atendimento, para que o
   // destaque de hoje já esteja à vista.
-  const [cursor, setCursor] = useState(() => {
+  const [localCursor, setCursor] = useState(() => {
     const fallback = first ?? {
       year: new Date().getFullYear(),
       month: new Date().getMonth() + 1,
@@ -94,6 +102,13 @@ export function AcaMonthCalendar({
     }
     return fallback;
   });
+
+  const cursor = month ?? localCursor;
+  function navigate(delta: number) {
+    const next = shiftMonth(cursor, delta);
+    if (onMonthChange) onMonthChange(next);
+    else setCursor(next);
+  }
 
   const grid = useMemo(() => monthGrid(cursor.year, cursor.month), [cursor]);
 
@@ -118,8 +133,10 @@ export function AcaMonthCalendar({
   );
 
   const index = cursor.year * 12 + cursor.month;
-  const canGoBack = first ? index > first.year * 12 + first.month : false;
-  const canGoForward = last ? index < last.year * 12 + last.month : false;
+  const canGoBack = Boolean(onMonthChange) ||
+    (first !== null && index > first.year * 12 + first.month);
+  const canGoForward = Boolean(onMonthChange) ||
+    (last !== null && index < last.year * 12 + last.month);
 
   if (days.length === 0) {
     return (
@@ -150,7 +167,7 @@ export function AcaMonthCalendar({
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <button
             type="button"
-            onClick={() => setCursor(shiftMonth(cursor, -1))}
+            onClick={() => navigate(-1)}
             disabled={!canGoBack}
             aria-label="Mês anterior"
             className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30"
@@ -162,7 +179,7 @@ export function AcaMonthCalendar({
           </p>
           <button
             type="button"
-            onClick={() => setCursor(shiftMonth(cursor, 1))}
+            onClick={() => navigate(1)}
             disabled={!canGoForward}
             aria-label="Próximo mês"
             className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30"
@@ -229,13 +246,15 @@ export function AcaMonthCalendar({
                     >
                       {cell.day}
                     </span>
-                    <span
-                      className={`text-[10px] font-medium ${
-                        cell.inMonth ? "text-sky-700" : "text-sky-700/60"
-                      }`}
-                    >
-                      {formatTime(day!.iso)}
-                    </span>
+                    {showTime && (
+                      <span
+                        className={`text-[10px] font-medium ${
+                          cell.inMonth ? "text-sky-700" : "text-sky-700/60"
+                        }`}
+                      >
+                        {formatTime(day!.iso)}
+                      </span>
+                    )}
                     {day!.assistidos.length > 0 && (
                       <span className="mt-1 flex w-full flex-col gap-0.5">
                         {day!.assistidos.slice(0, 4).map((nome) => (
