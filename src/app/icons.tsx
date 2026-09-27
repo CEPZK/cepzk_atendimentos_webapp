@@ -280,3 +280,22 @@ export function BookHeartIcon({ className = "h-6 w-6" }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * iOS share icon (box with upward arrow) from Streamline / Material Symbols (`ios_share`).
+ * Used for instructions on how to install on iOS devices.
+ */
+export function IosShareIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M0 0h24v24H0z" fill="none" />
+      <path d="M6 22q-.825 0-1.412-.587T4 20V10q0-.825.588-1.412T6 8h3v2H6v10h12V10h-3V8h3q.825 0 1.413.588T20 10v10q0 .825-.587 1.413T18 22zm5-6V4.825l-1.6 1.6L8 5l4-4l4 4l-1.4 1.425l-1.6-1.6V16z" />
+    </svg>
+  );
+}
+

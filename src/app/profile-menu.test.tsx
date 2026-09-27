@@ -186,6 +186,8 @@ describe("ProfileMenu", () => {
     expect(dialog).toBeDefined();
 
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 });

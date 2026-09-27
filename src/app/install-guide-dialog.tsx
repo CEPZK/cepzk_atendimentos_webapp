@@ -2,6 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { IosShareIcon, PlusIcon } from "@/app/icons";
 
 interface InstallGuideDialogProps {
   isIOS: boolean;
@@ -104,13 +105,25 @@ export function InstallGuideDialog({
                   <span className="leading-snug">
                     {isChromeIOS ? (
                       <>
-                        Toque no botão <strong>Compartilhar</strong> (ícone 📤) na barra
-                        de endereços do Chrome (ou no menu de três pontos <strong>···</strong>).
+                        Toque no botão <strong>Compartilhar</strong>{" "}
+                        <span
+                          aria-label="ícone de compartilhar"
+                          className="inline-flex items-center align-middle rounded bg-slate-100 px-1 py-0.5 text-slate-800 ring-1 ring-slate-200"
+                        >
+                          <IosShareIcon className="h-4 w-4" />
+                        </span>{" "}
+                        na barra de endereços do Chrome (ou no menu de três pontos <strong>···</strong>).
                       </>
                     ) : (
                       <>
-                        No Safari, toque no botão <strong>Compartilhar</strong> (ícone 📤
-                        na barra inferior do navegador).
+                        No Safari, toque no botão <strong>Compartilhar</strong>{" "}
+                        <span
+                          aria-label="ícone de compartilhar"
+                          className="inline-flex items-center align-middle rounded bg-slate-100 px-1 py-0.5 text-slate-800 ring-1 ring-slate-200"
+                        >
+                          <IosShareIcon className="h-4 w-4" />
+                        </span>{" "}
+                        na barra inferior do navegador.
                       </>
                     )}
                   </span>
@@ -121,7 +134,14 @@ export function InstallGuideDialog({
                   </span>
                   <span className="leading-snug">
                     Role a lista para baixo e toque em{" "}
-                    <strong>Adicionar à Tela de Início</strong>.
+                    <strong>Adicionar à Tela de Início</strong>{" "}
+                    <span
+                      aria-label="ícone de adicionar"
+                      className="inline-flex items-center align-middle rounded bg-slate-100 px-1 py-0.5 text-slate-800 ring-1 ring-slate-200"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                    </span>
+                    .
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
