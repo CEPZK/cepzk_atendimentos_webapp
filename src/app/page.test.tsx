@@ -77,18 +77,19 @@ describe("home header", () => {
     expect(html).not.toContain("CEPZK · Atendimentos</p>");
   });
 
-  it("lists one {role} · {sector} pair per line instead of capsules", async () => {
+  it.each([
+    ["coordenador", "Coordenador"],
+    ["admin", "Administrador"],
+  ] as const)("combines sectors under a single %s role label", async (role, label) => {
+    vi.mocked(requireVolunteer).mockResolvedValue(volunteerSession(role));
+
     const html = await renderHome();
 
     expect(html).toContain(
-      '<span class="block">Coordenador · Acolher com Amor</span>',
+      `<p class="text-sm text-slate-500">${label} · Acolher com Amor, Desobsessão Infantil</p>`,
     );
-    expect(html).toContain(
-      '<span class="block">Coordenador · Desobsessão Infantil</span>',
-    );
-    // No count, and no standalone sector capsules.
+    expect(html.split(`${label} ·`)).toHaveLength(2);
     expect(html).not.toContain("2 setores");
-    expect(html).not.toContain('class="block">Desobsessão Infantil</span>');
   });
 
   it("shows a single pair line when there is a single sector", async () => {

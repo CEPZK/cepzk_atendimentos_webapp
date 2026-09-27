@@ -116,7 +116,8 @@ O acesso é **sem senha** e **somente por convite (invite-only)**:
    chega no hash da URL) e o redireciona para a página de destino;
 4. **Primeiro acesso:** como o perfil ainda está incompleto (faltam
    sobrenome e telefone), o usuário é redirecionado para
-   `/complete-profile` — nome, sobrenome e telefone são obrigatórios;
+   `/complete-profile` — nome, sobrenome e telefone são obrigatórios e
+   iniciam em branco, sem preenchimento automático com os dados do convite;
 5. Em seguida, ele cai na página inicial, que por enquanto exibe apenas
    **"Bem-vindo, {nome}!"**.
 

@@ -127,17 +127,9 @@ export default async function HomePage() {
 
       <main className="mx-auto w-full max-w-2xl flex-1 p-6">
         <p className="text-sm text-slate-500">
-          {sectors.length === 0 ? (
-            ROLE_LABELS[volunteer.papel]
-          ) : (
-            // One "{role} · {sector}" pair per line: the schedule is what
-            // releases features, so each sector is a pairing, not a count.
-            sectors.map((sector) => (
-              <span key={sector.id} className="block">
-                {`${ROLE_LABELS[volunteer.papel]} · ${sector.nome}`}
-              </span>
-            ))
-          )}
+          {ROLE_LABELS[volunteer.papel]}
+          {sectors.length > 0 &&
+            ` · ${sectors.map((sector) => sector.nome).join(", ")}`}
         </p>
 
         <section className="mt-6">
