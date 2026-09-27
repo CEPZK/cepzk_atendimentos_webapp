@@ -93,7 +93,6 @@ export function ReportFlow({ month, days, volunteers }: ReportFlowProps) {
         title="Escolha o dia da sessão"
         days={agendaDays}
         month={month}
-        showTime={false}
         onMonthChange={(next) => {
           const key = `${String(next.year).padStart(4, "0")}-${String(next.month).padStart(2, "0")}`;
           router.push(`/acolher-com-amor/relatorios/novo?mes=${key}`, { scroll: false });
@@ -214,8 +213,7 @@ function ReportDialog({
           {formatLongDate(day.iso)}
         </h3>
         <p className="mt-0.5 text-xs text-slate-500">
-          {formatShortDate(day.iso)}
-          {day.assistidos.length > 0 && ` · ${formatTime(day.iso)}`}
+          {formatShortDate(day.iso)} · {formatTime(day.iso)}
         </p>
 
         {day.assistidos.length === 0 ? (

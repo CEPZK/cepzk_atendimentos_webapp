@@ -12,6 +12,8 @@ import {
   addDays,
   dayKey,
   monthGrid,
+  parseHorario,
+  upcomingOccurrences,
 } from "@/lib/aca-agenda";
 import { ArrowLeftIcon } from "@/app/icons";
 import {
@@ -67,7 +69,7 @@ export default async function NovoRelatorioPage({
     .map(mapAtendimento)
     .filter((atendimento) => isAcolherComAmor(atendimento.setor));
 
-  // Reports may refer to any date, not just the upcoming schedule.
+  // Reports can refer to past months as well as upcoming sessions.
   // Fetch only the visible grid, including the neighbouring-month cells.
   const month = reportMonth((await searchParams).mes);
   const cells = monthGrid(month.year, month.month).weeks.flat();
@@ -85,12 +87,28 @@ export default async function NovoRelatorioPage({
     .returns<SessionRow[]>();
 
   const acaAtendimentoIds = new Set(atendimentos.map((item) => item.id));
-  const daysByKey = new Map<string, ReportCalendarDay>(
-    cells.map((cell) => [cell.key, {
-      iso: new Date(`${cell.key}T00:00:00-03:00`).toISOString(),
-      assistidos: [],
-    }]),
-  );
+  // Use the same scheduled weekdays and times as the ACA calendar.
+  // Populating every cell would widen all columns and make non-service
+  // days selectable. Only scheduled occurrences should be highlighted.
+  const occurrences = atendimentos
+    .flatMap((atendimento) => {
+      const schedule = parseHorario(atendimento.horario);
+      if (!schedule) return [];
+      return upcomingOccurrences(
+        schedule,
+        cells.length / 7,
+        new Date(from.getTime() - 1),
+      );
+    })
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  const daysByKey = new Map<string, ReportCalendarDay>();
+  for (const date of occurrences) {
+    const key = dayKey(date);
+    if (!daysByKey.has(key)) {
+      daysByKey.set(key, { iso: date.toISOString(), assistidos: [] });
+    }
+  }
 
   for (const row of sessionRows ?? []) {
     const tratamento = one(row.tratamento);
@@ -109,7 +127,6 @@ export default async function NovoRelatorioPage({
     ) {
       continue;
     }
-    if (day.assistidos.length === 0) day.iso = row.data;
     day.assistidos.push({
       tratamentoId: tratamento.id,
       sessaoId: row.id,

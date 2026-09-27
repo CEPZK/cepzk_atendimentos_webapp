@@ -30,8 +30,6 @@ interface AcaMonthCalendarProps {
   /** Controlled navigation for screens that load one month at a time. */
   month?: { year: number; month: number };
   onMonthChange?: (month: { year: number; month: number }) => void;
-  /** Hide times when the calendar represents whole days rather than slots. */
-  showTime?: boolean;
   /** Called with the `YYYY-MM-DD` key of the day the volunteer clicked. */
   onSelectDay: (key: string) => void;
 }
@@ -43,7 +41,7 @@ interface AcaMonthCalendarProps {
  * month stays visible but muted so the date is read in context.
  *
  * Scheduling screens supply only bookable dates. The report screen supplies
- * every day of its visible month and controls navigation to load history.
+ * the scheduled days of its visible month and controls navigation to load history.
  */
 export function AcaMonthCalendar({
   title,
@@ -51,7 +49,6 @@ export function AcaMonthCalendar({
   days,
   month,
   onMonthChange,
-  showTime = true,
   onSelectDay,
 }: AcaMonthCalendarProps) {
   const byDay = useMemo(
@@ -246,15 +243,13 @@ export function AcaMonthCalendar({
                     >
                       {cell.day}
                     </span>
-                    {showTime && (
-                      <span
-                        className={`text-[10px] font-medium ${
-                          cell.inMonth ? "text-sky-700" : "text-sky-700/60"
-                        }`}
-                      >
-                        {formatTime(day!.iso)}
-                      </span>
-                    )}
+                    <span
+                      className={`text-[10px] font-medium ${
+                        cell.inMonth ? "text-sky-700" : "text-sky-700/60"
+                      }`}
+                    >
+                      {formatTime(day!.iso)}
+                    </span>
                     {day!.assistidos.length > 0 && (
                       <span className="mt-1 flex w-full flex-col gap-0.5">
                         {day!.assistidos.slice(0, 4).map((nome) => (

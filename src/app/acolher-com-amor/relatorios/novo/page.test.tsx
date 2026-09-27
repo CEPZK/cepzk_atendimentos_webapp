@@ -17,8 +17,7 @@ const atendimento = {
 };
 const session = {
   id: 123,
-  // Jan 15 in São Paulo, Jan 16 in UTC; also outside the current Saturday schedule.
-  data: "2025-01-16T01:30:00Z",
+  data: "2025-01-18T12:30:00Z",
   relatorio: null,
   tratamento: {
     id: 20, atendimento_id: 1,
@@ -63,7 +62,7 @@ async function openMonth(mes?: string | string[]) {
 }
 
 describe("report calendar dates", () => {
-  it("loads a historical grid and submits its actual session, regardless of today's schedule", async () => {
+  it("loads a historical scheduled day and submits its actual session", async () => {
     const query = stubDatabase();
     await openMonth("2025-01");
     expect(requireSector).toHaveBeenCalledWith("Acolher com Amor");
@@ -71,15 +70,30 @@ describe("report calendar dates", () => {
     expect(query.lt).toHaveBeenCalledWith("data", "2025-02-09T03:00:00.000Z");
     expect(screen.getByText("janeiro de 2025")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "15 Maria Silva" }));
+    fireEvent.click(screen.getByRole("button", { name: "18 09:30 Maria Silva" }));
     const dialog = within(screen.getByRole("dialog"));
-    expect(dialog.getByText("15/01/2025 · 22:30")).toBeTruthy();
+    expect(dialog.getByText("18/01/2025 · 09:30")).toBeTruthy();
     fireEvent.change(dialog.getByLabelText(/Dirigente/), { target: { value: "v1" } });
     fireEvent.change(dialog.getByLabelText(/Ponte/), { target: { value: "v2" } });
     fireEvent.click(dialog.getByRole("button", { name: "Salvar relatórios" }));
     await waitFor(() => expect(registerAcaRelatorios).toHaveBeenCalledWith([{
       sessaoId: 123, tratamentoId: 20, dirigenteId: "v1", ponteId: "v2", obs: "",
     }]));
+  });
+
+
+  it("matches the ACA calendar's columns, times and selectable weekdays", async () => {
+    const { container } = await openMonth("2025-01");
+    // Only Saturdays are widened. Other weekdays stay muted and unclickable.
+    const grid = container.querySelector<HTMLElement>(".grid[style]")!;
+    expect(grid.style.gridTemplateColumns).toBe(
+      "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,4fr)",
+    );
+    expect(screen.queryByRole("button", { name: /^14(?: |$)/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "18 09:30 Maria Silva" })).toBeTruthy();
+    // Empty service days keep their scheduled time, including adjacent months.
+    expect(screen.getByRole("button", { name: "1 09:30" })).toBeTruthy();
+    expect(screen.getAllByRole("button")).toHaveLength(8); // Six Saturdays + month navigation.
   });
 
   it("allows navigating before and after the loaded month, including year boundaries", async () => {
@@ -92,18 +106,19 @@ describe("report calendar dates", () => {
 
   it("allows choosing a day without sessions and explains why there is nothing to report", async () => {
     await openMonth("2025-01");
-    fireEvent.click(screen.getByRole("button", { name: "14" }));
+    fireEvent.click(screen.getByRole("button", { name: "11 09:30" }));
     expect(screen.getByText("Nenhum assistido agendado neste dia.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Salvar relatórios" })).toBeNull();
     expect(registerAcaRelatorios).not.toHaveBeenCalled();
   });
 
   it("loads today's sessions even when their time has passed", async () => {
-    const query = stubDatabase([{ ...session, data: "2026-09-27T12:30:00Z" }]);
+    vi.setSystemTime(new Date("2026-09-26T20:00:00Z"));
+    const query = stubDatabase([{ ...session, data: "2026-09-26T12:30:00Z" }]);
     await openMonth();
     expect(query.gte).toHaveBeenCalledWith("data", "2026-08-30T03:00:00.000Z");
-    fireEvent.click(screen.getByRole("button", { name: "27 Maria Silva" }));
-    expect(screen.getByText("27/09/2026 · 09:30")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "26 09:30 Maria Silva" }));
+    expect(screen.getByText("26/09/2026 · 09:30")).toBeTruthy();
   });
 
   it("also permits future months without the old six-month limit", async () => {
