@@ -280,3 +280,52 @@ export function BookHeartIcon({ className = "h-6 w-6" }: IconProps) {
     </svg>
   );
 }
+
+/** `public/icons/ios-share.svg` — Compartilhar (iOS Share, Streamline / Material Symbols). */
+export function IosShareIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M0 0h24v24H0z" fill="none" />
+      <path d="M6 22q-.825 0-1.412-.587T4 20V10q0-.825.588-1.412T6 8h3v2H6v10h12V10h-3V8h3q.825 0 1.413.588T20 10v10q0 .825-.587 1.413T18 22zm5-6V4.825l-1.6 1.6L8 5l4-4l4 4l-1.4 1.425l-1.6-1.6V16z" />
+    </svg>
+  );
+}
+
+/** `public/icons/add-screen.svg` — Adicionar à Tela de Início (The Noun Project #658054). */
+export function AddToScreenIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <path strokeLinecap="butt" d="M12 8.5v7m-3.5-3.5h7" />
+    </svg>
+  );
+}
+
+/** `public/icons/down-arrow.svg` — Ver Mais (SVG Repo #80156). */
+export function DownArrowIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 330 330"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M325.607,79.393c-5.857-5.857-15.355-5.858-21.213,0.001l-139.39,139.393L25.607,79.393c-5.857-5.857-15.355-5.858-21.213,0.001c-5.858,5.858-5.858,15.355,0,21.213l150.004,150c2.813,2.813,6.628,4.393,10.606,4.393s7.794-1.581,10.606-4.394l149.996-150C331.465,94.749,331.465,85.251,325.607,79.393z" />
+    </svg>
+  );
+}
+
+
+

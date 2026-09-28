@@ -4,13 +4,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { BarsIcon } from "@/app/icons";
 import { signOut } from "@/app/session-actions";
+import { usePwaInstall } from "@/app/use-pwa-install";
+import { InstallGuideDialog } from "@/app/install-guide-dialog";
 
 /**
- * The app bar's menu: the volunteer's personal data and the session
- * exit. Client-side because it owns the open/close state.
+ * The app bar's menu: the volunteer's personal data, PWA installation shortcut,
+ * and the session exit. Client-side because it owns the open/close state.
  */
 export function ProfileMenu() {
   const [open, setOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const { isStandalone, isIOS, isChromeIOS, promptInstall } = usePwaInstall();
+
+  const handleInstallClick = async () => {
+    setOpen(false);
+    const outcome = await promptInstall();
+    if (outcome === "unavailable") {
+      setShowGuide(true);
+    }
+  };
 
   return (
     <div className="relative">
@@ -45,6 +57,16 @@ export function ProfileMenu() {
             >
               Dados pessoais
             </Link>
+            {!isStandalone && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={handleInstallClick}
+                className="block w-full px-4 py-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                Instalar Aplicativo
+              </button>
+            )}
             <form action={signOut}>
               <button
                 type="submit"
@@ -56,6 +78,14 @@ export function ProfileMenu() {
             </form>
           </div>
         </>
+      )}
+
+      {showGuide && (
+        <InstallGuideDialog
+          isIOS={isIOS}
+          isChromeIOS={isChromeIOS}
+          onClose={() => setShowGuide(false)}
+        />
       )}
     </div>
   );
