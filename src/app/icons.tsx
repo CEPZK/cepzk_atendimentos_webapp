@@ -281,10 +281,7 @@ export function BookHeartIcon({ className = "h-6 w-6" }: IconProps) {
   );
 }
 
-/**
- * iOS share icon (box with upward arrow) from Streamline / Material Symbols (`ios_share`).
- * Used for instructions on how to install on iOS devices.
- */
+/** `public/icons/ios-share.svg` — Compartilhar (iOS Share, Streamline / Material Symbols). */
 export function IosShareIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
@@ -299,10 +296,7 @@ export function IosShareIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-/**
- * iOS "Add to Home Screen" action icon (rounded square with a centered plus sign).
- * Matches Noun Project icon #658054 (`add-screen`).
- */
+/** `public/icons/add-screen.svg` — Adicionar à Tela de Início (The Noun Project #658054). */
 export function AddToScreenIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
@@ -319,10 +313,7 @@ export function AddToScreenIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-/**
- * Down arrow / chevron icon matching SVG Repo #80156 (`down-arrow.svg`).
- * Used for the "Ver Mais" step in the iOS installation guide.
- */
+/** `public/icons/down-arrow.svg` — Ver Mais (SVG Repo #80156). */
 export function DownArrowIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
